@@ -1,0 +1,15 @@
+
+With react you write code that that looks like HTML right in your JS code. Those 'tags'
+need pre-processing to run in a browser. This means you need a 'buildtool' like webpack. When debued React was the 'view layer' in the JS application.
+
+I am teaching myself out of the repository: https://github.com/moonhighway/learning-react
+
+JavaScript has been around since 1995 but got significantly more robust with DHTML changes the elements on the webpages depending on the user’s actions. AJAX allows the browser to request certain elements one at a time in order to reduce the strain on the server and the Internet connection.
+
+with Node.Js+React you are basically able to build any full-stack web-application. 
+
+little caveate/catch-22 on JS is that because it's everywhere for so long and constantly evolving. the 'ECMA script' as its reffered to might need to be translated, or cross-compiled if you want to be a symantic pedant about it, to an older version that your browser can recognize. 
+
+the 'Kangax Compatability table' is a useful tool for this: https://github.com/kangax/compat-table
+
+
