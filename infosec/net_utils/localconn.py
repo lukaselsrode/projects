@@ -13,7 +13,7 @@ def info():
     print('\n')
     for k,v in d.items():
         print(k,':',v)
-
+    return d
 
 if __name__ == "__main__":
     info()
