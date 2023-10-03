@@ -9,7 +9,6 @@ old-school 8/16-bit racers  like pole-position were a plenty I was amiss to find
 to write everything in the game from scratch and rely on as few packages as possible, in the same spirit in which the original Tetris was written.
 
 ## Overview
-### Video
 ![](https://github.com/lukaselsrode/projects/blob/main/game_dev/ascii_driver/misc/game_video.gif)
 ### Mechanics
 #### Main Game Loop
@@ -22,13 +21,6 @@ From which I was able to take an OOP approach to fill in the methods of each of 
             self.process_inputs(),self.update(),self.render(time.time(),start)
 ```
 #### Object Orientated Implementation
-##### Game
-Most of the game logic is done in the Game Class including collision detection and object creation and destruction. 
-```python
-class Game(object):
-    def __init__(self):
-        self.Keys,self.Road = KeyListner(),Road()
-```
 ##### KeyListener
 The Game.process_inputs() method is implemented with a KeyListener using the [pynput](https://pypi.org/project/pynput/) library. This method was easy to implement given that the only real inputs I needed to keep track of was the two possible directional keys and the escape key to quit the program. 
 ```python
@@ -37,9 +29,38 @@ class KeyListner(object):
         self.direction,self.quit=None,False
         keyboard.Listener(on_press=lambda x : self.process_key(x)).start()
 ```
-##### Road 
-##### Settings 
+##### Settings
 This class is used to configure the game settings, the frame-rate refresh, the number of lanes on the road. It keeps track of the 'levels' and takes in a default configuration defined in the first lines of game.py; this could be moved to a YAML or JSON to be a little cleaner but I liked the idea of the game being self-contained in one file. 
+```python
+class Settings(object):
+    def __init__(self):
+        self.game_world=self.window_len,self.edge_char,self.mid_char,self.open_char,self.secs_per_lvl = DEFAULT_WINDOW_LENGTH,'_', '- ',' ',DEFAULT_TIME_PER_LVL
+        self.rules=DEFAULT_RULES_SET
+        self.nlanes=self.asset_spawn_time=self.max_n_assets=self.pot_pwrup=self.t_per_frame=self.asset_jump_time=None
+        self.lvl=0
+```
+##### Road
+```python
+class Road(object):
+    def __init__(self):
+        self.game_rules,self.assets=Settings(),[]
+        self.last_spawn=self.last_lvl=0
+```
+##### Game
+Most of the game logic is done in the Game Class including collision detection and object creation and destruction. 
+```python
+class Game(object):
+    def __init__(self):
+        self.Keys,self.Road = KeyListner(),Road()
+```
+##### Player
+```python
+class Player(object):
+    def __init__(self,Settings: object):
+        self.game_rules,self.power,self.ascii=Settings,None,DEFAULT_PLAYER_CAR                  
+        self.sx,self.sy=measure_asset(self.ascii)                               
+        self.lane_pos=self.bullet_spacing=0
+```
 ##### Approacher
 ## Install
 ### Clone Repository
