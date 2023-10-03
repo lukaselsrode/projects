@@ -217,7 +217,7 @@ class Road(object):
         return '\n'.join([self.barrier,*['\n'.join([self.create_ascii_lane(i),self.lane if i%2==0 and i != 0 else '']) for i in range(self.width)],self.barrier])
 
 class Player(object):
-    def __init__(self,Settings):
+    def __init__(self,Settings: object):
         self.game_rules,self.power,self.ascii=Settings,None,DEFAULT_PLAYER_CAR                  
         self.sx,self.sy=measure_asset(self.ascii)                               
         self.lane_pos=self.bullet_spacing=0
