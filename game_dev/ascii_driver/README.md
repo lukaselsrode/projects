@@ -10,7 +10,7 @@ to write everything in the game from scratch and really on as few packages as po
 
 ## Overview
 ### Video
-![]
+![https://github.com/lukaselsrode/projects/blob/main/game_dev/ascii_driver/misc/game_video.gif]
 ### Mechanics
 #### Main Game Loop
 I did some reading into how most games relly on a 'main gamplay loop'
