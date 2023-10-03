@@ -6,7 +6,7 @@ only used the ascii characters of '[]' to make up the main tetra blocks that com
 in a high-speed car chase with the KGB through the streets of Moscow. That portion of the movie then flickered back and forth between reality 
 and an ascii character video game representation of the chase sequence. Part of me went "ah-ha! what a neat little concept for a toy-ascii game", I went hunting through the interwebs and while 
 old-school 8/16-bit racers  like pole-position were a plenty I was amiss to find anything that had that classic ascii style that might be classified as an "ascii racer", so I made one. I challenged myself 
-to write everything in the game from scratch and really on as few packages as possible, in the same spirit in which the original Tetris was written.
+to write everything in the game from scratch and rely on as few packages as possible, in the same spirit in which the original Tetris was written.
 
 ## Overview
 ### Video
