@@ -12,10 +12,19 @@ to write everything in the game from scratch and rely on as few packages as poss
 ![](https://github.com/lukaselsrode/projects/blob/main/game_dev/ascii_driver/misc/game_video.gif)
 
 ## Install
-### Auto-install Shell Script
+### Auto-install Script
+Run this shell script to install the game to the directory you run the script from. I would suggest somewhere in /usr/local/. 
 ```shell
-    pip install -r cmd_driver_game/requirements.txt;
-    alias ascii_driver='/usr/bin/python <PATH_TO_GAME>.game.py'
+    git clone https://github.com/lukaselsrode/projects.git; 
+    mv projects/game_dev/ascii_driver/ ./;
+    rm -rf ./projects;
+    pip install -r ./ascii_driver/requirements.txt;
+    alias asciidriver="/usr/bin/python $PWD/ascii_driver/game.py"
+```
+### PlayGame Locally
+Now you can play the game on your terminal running the command
+```shell
+    $ asciidriver
 ```
 ### Mechanics
 #### Main Game Loop
