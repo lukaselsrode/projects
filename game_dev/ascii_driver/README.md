@@ -10,6 +10,13 @@ to write everything in the game from scratch and rely on as few packages as poss
 
 ## Overview
 ![](https://github.com/lukaselsrode/projects/blob/main/game_dev/ascii_driver/misc/game_video.gif)
+
+## Install
+### Auto-install Shell Script
+```shell
+    pip install -r cmd_driver_game/requirements.txt;
+    alias ascii_driver='/usr/bin/python <PATH_TO_GAME>.game.py'
+```
 ### Mechanics
 #### Main Game Loop
 I did some reading into how most games rely on a [gameplay loop](https://gameprogrammingpatterns.com/game-loop.html) and started implemented a 'Game' class. 
@@ -40,20 +47,22 @@ class Settings(object):
         self.lvl=0
 ```
 ##### Road
+Most of the game logic is done in the Road Class including collision detection and object creation and destruction. This might be a 'GameLogic' and 'World' class in traditional game development.However, I decided to not segment the logic given the scope of the project was relatively small. 
 ```python
 class Road(object):
     def __init__(self):
         self.game_rules,self.assets=Settings(),[]
         self.last_spawn=self.last_lvl=0
 ```
+The Game class takes the game world objects in the Road class and user input in the KeyListner object and uses it to advance the game. While a traditional application is static, waiting for an input or request to update/return, a game needs to update/return regardless of an input or request. In effect the application needs to update/return even on void inputs. 
 ##### Game
-Most of the game logic is done in the Game Class including collision detection and object creation and destruction. 
 ```python
 class Game(object):
     def __init__(self):
         self.Keys,self.Road = KeyListner(),Road()
 ```
 ##### Player
+The player class is the car which the user has control over. The ASCII representation of the player needs to be taken into account as when the car jumps lanes, approaching objects need to be shifted accordingly to the assets size. 
 ```python
 class Player(object):
     def __init__(self,Settings: object):
@@ -62,17 +71,26 @@ class Player(object):
         self.lane_pos=self.bullet_spacing=0
 ```
 ##### Approacher
-## Install
-### Clone Repository
-```shell
-    $  
+The Approacher class are the objects which come at the player. Either they are powerups, or they are obstacles which break the main game loop and force a 'GAME OVER'. 
+```python
+class Approacher(object):
+    def __init__(self,is_obstacle:bool,Settings:object):
+        self.is_obstacle,self.a_id = is_obstacle,str(id(self))
+        self.name,self.ascii=random.choice(OBSTACLES if is_obstacle else POWERUPS)
+        self.lane_pos = random.choice([i for i in range(Settings.nlanes*2)])
+        self.sx,self.sy = measure_asset(self.ascii)
+        self.frame_count,self.last_jumped=self.sx,time.time()
 ```
-### Requirements
-```shell
-    $ pip install -r cmd_driver_game/requirements.txt 
+### Future Additions 
+#### Webpage
+In main.py, there is a FLASK implementation for the game. However, the ASCII color codes and terminations I used to make it valid and playable in the terminal are not compatible with a web page. 
+As such I would need to implement a color scheme adapted to a web page format, or re-write the game.py file in JavaScript. However I did manage to get the process of running the game to pipe to the page. 
+```python
+@app.route('/game')
+def game():
+    proc=subprocess.Popen(['python3','game.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+    while True:
+        out=proc.stdout.read().decode()
+        if not out: break
+        return render_template('game.html',output=out)
 ```
-### Setup Alias 
-```shell
-    $ alias ascii_driver='/usr/bin/python <PATH_TO_GAME>.game.py'
-```
-
