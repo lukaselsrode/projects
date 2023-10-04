@@ -1,7 +1,7 @@
 *.log
 .*
-sobriety/config/l*
-sobriery/config/n*
+recovery/config/l*
+recovery/config/n*
 __*
 env*
 
