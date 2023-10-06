@@ -7,20 +7,24 @@ from os import system as run
 from subprocess import getoutput as get 
 from matplotlib import pyplot as plt
 
-
-
-DEFAULT_USER = 'lukas'
-DEFAULT_DAT_FILE = f'config/{DEFAULT_USER}/data.csv'
+def setup_cfg()->None:
+    parser=argparse.ArgumentParser()
+    parser.add_argument("-u",type=str,help="the users program",default='default_cfg')
+    args=parser.parse_args()
+    global USER
+    global DAT_FILE
+    USER=args.u
+    DAT_FILE = f'config/{USER}/data.csv'
 
 # a function to load the yaml files where the users terms are configured
 def load_yaml(filename: str) -> dict:
-    with open(f'./config/{DEFAULT_USER}/{filename}', 'r') as file:
+    with open(f'./config/{USER}/{filename}', 'r') as file:
         obj=yaml.safe_load(file)
     return obj
 
 # function to write data to csv file 
 def write_data(data:list[float]) -> None:
-    with open(DEFAULT_DAT_FILE, 'a') as f:
+    with open(DAT_FILE, 'a') as f:
         writer = csv.writer(f)
         writer.writerow(data)
 
@@ -30,7 +34,7 @@ def get_date() -> str:
 
 # function to check if the day is valid
 def new_entry_valid()-> bool:
-    return False if str(get(f"tail -n 1 {DEFAULT_DAT_FILE} | cut -d ',' -f 1")) == get_date() else True
+    return False if str(get(f"tail -n 1 {DAT_FILE} | cut -d ',' -f 1")) == get_date() else True
                 
 # something to prompt user  
 def get_answer(question: str) -> int:
@@ -103,7 +107,7 @@ def show_progress():
 
 
 def main():
-    measure_daily_program(),show_progress()    
+    setup_cfg(),measure_daily_program(),show_progress()    
 
 
 
