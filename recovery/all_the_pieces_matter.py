@@ -7,6 +7,7 @@ from os import system as run
 from subprocess import getoutput as get 
 from matplotlib import pyplot as plt
 
+
 def setup_cfg()->None:
     parser=argparse.ArgumentParser()
     parser.add_argument("-u",type=str,help="the users program",default='default_cfg')
@@ -81,7 +82,16 @@ def pos_reinforcement()->float:
         ('Have you been a part of a','fellowship','fellowship today?')]
     return ask_questions('pr.yaml',args)
 
-## TODO: 
+def normalize_as_pct(val:float or int,min_val:float or int,val_range:float or int)->int:
+    return round(100*((val - min_val)/val_range))
+
+# TODO: Throwaway function to re-write the old df's to values that are more readable.
+def normalize_df():
+    # map() all fields of df that are not program with norm(x,0,1) function 
+    # map() the program field with norm(x,-1,4) function : given the equation is wp+nr-(o-pr)
+    # re-write to new .csv file
+    return 
+# TODO: need to apply the normalization function to this after ^^ is done 
 def measure_daily_program() -> None:    
     if new_entry_valid():
         day = get_date()
@@ -93,10 +103,10 @@ def measure_daily_program() -> None:
         write_data([day,wp,nr,o,pr,p])
         return
     print('Program Value for Today is already recorded...')
-    
 
-def show_progress():
-    df=pd.read_csv(DEFAULT_DAT_FILE)
+#TODO: this should be stored and re-written for the Kivy integration
+def show_progress()->None:
+    df=pd.read_csv(DAT_FILE)
     ys = [i for i in df.columns if i != 'date']
     df.set_index('date')
     df.index = pd.to_datetime(df.date,yearfirst=True)
@@ -105,11 +115,8 @@ def show_progress():
     plt.title('Sobriety Program Tracker')
     plt.show()
 
-
 def main():
     setup_cfg(),measure_daily_program(),show_progress()    
-
-
 
 if __name__ == '__main__':
     main()
