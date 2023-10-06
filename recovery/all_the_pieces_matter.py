@@ -1,78 +1,84 @@
 import time
 import yaml
-import pandas as pd
 import csv
+import argparse
+import pandas as pd
 from os import system as run
 from subprocess import getoutput as get 
 from matplotlib import pyplot as plt
 
+
+
 DEFAULT_USER = 'lukas'
 DEFAULT_DAT_FILE = f'config/{DEFAULT_USER}/data.csv'
-
-# something to prompt user 
-def get_answer(question: str) -> int:
-    print(f'Input [Y/N] ~ {question}')
-    ans = str(input())
-    return 1 if 'y' in ans or 'Y' in ans else 0
-
-# get mean score given a set/list of questions 
-def return_mean_term(questions:list[str]) -> int or float:
-    return sum(list(map(lambda x:get_answer(x), questions)))/len(questions)
 
 # a function to load the yaml files where the users terms are configured
 def load_yaml(filename: str) -> dict:
     with open(f'./config/{DEFAULT_USER}/{filename}', 'r') as file:
-        obj = yaml.safe_load(file)
+        obj=yaml.safe_load(file)
     return obj
+
+# function to write data to csv file 
+def write_data(data:list[float]) -> None:
+    with open(DEFAULT_DAT_FILE, 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow(data)
 
 # function to get todays date
 def get_date() -> str:
     return "-".join([str(i) for i in time.localtime()[:3]])
 
-# functions for the terms
-def will_power() -> float:
-    wp= load_yaml('wp.yaml')
-    questions =  [' '.join([wp['proposition'],i,wp['ending']]) for i in wp['desires']]
-    return round(return_mean_term(questions),3)
-    
-def neg_reinforcement() -> float:
-    nr=load_yaml('nr.yaml')
-    daily_questions,daily_reflections = [*nr['restrictions'],*nr['boundries'],*nr['accountability']], nr['rellapse']
-    daily_questions = [' '.join(['Are you',i,'?']) for i in daily_questions]
-    daily_reflections = [' '.join(['Have you',i,'?']) for i in daily_reflections]
-    return round(return_mean_term([*daily_questions,*daily_reflections]),3)
-
-def obsession():
-    o,q=load_yaml('o.yaml'),[]
-    for i in o['mental']:
-        q.append(f'forgot to take your meds to manage {i}')
-    for i in o['addiction']:
-        q.append(f'Are you addicted to {i}?')
-    return round(return_mean_term(q),3)        
-
-def pos_reinforcement():
-    pr,q=load_yaml('pr.yaml'),[]
-    for i in pr['values']:
-        q.append(f'have you lived in accordance with {i} ?')
-    for i in pr['daily']:
-        q.append(f'have you done your daily {i} ?')
-    for i in pr['fellowship']:
-        q.append(f'have you been a part of a {i} fellowship today?')
-    lqs,las = len(q),len(pr['accomplishments'])
-    
-    return round(return_mean_term(q) + (len(pr['accomplishments'])/(lqs+las)),3)
-
-def new_entry_valid():
+# function to check if the day is valid
+def new_entry_valid()-> bool:
     return False if str(get(f"tail -n 1 {DEFAULT_DAT_FILE} | cut -d ',' -f 1")) == get_date() else True
                 
-# function to write data to csv file 
-def write_data(data):
-    with open(DEFAULT_DAT_FILE, 'a') as f:
-        writer = csv.writer(f)
-        writer.writerow(data)
+# something to prompt user  
+def get_answer(question: str) -> int:
+    print(f'Input [Y/N] ~ {question}')
+    ans=str(input())
+    return 1 if 'y' in ans or 'Y' in ans else 0
 
+# get mean score given a set/list of questions 
+def return_mean_term(questions:list[str]) -> int or float:
+    return round(sum(list(map(lambda x:get_answer(x), questions)))/len(questions),3)
 
-def measure_daily_program():    
+# function to create a set of questions from lists in config
+def create_field_questions(prefix:str,entries:list[str],suffix:str)->list[str]:
+    if not suffix: suffix = '?'
+    return list(map(lambda x: ' '.join([prefix,x,suffix]),entries))
+
+# function to create all the questions for any config file
+def ask_questions(cfg_file:str,prompts_cfg:list[tuple[str,str,str or None]]) -> list[str]:
+    file,q=load_yaml(cfg_file),[]
+    for pre,field,suf in prompts_cfg:q+=create_field_questions(pre,file[field],suf)
+    return return_mean_term(q)
+
+# Measuring Willpower
+def will_power() -> float:
+    return ask_questions('wp.yaml',[('Do you want to','desires',None)])
+
+# Negative Reinforcement
+def neg_reinforcement() -> float:
+    dq_args,dr_args=list(tuple(zip(['Are you']*3,['restrictions','boundaries','accountability'],3*[None]))),[('Have you','relapse',None)]
+    return ask_questions('nr.yaml',dq_args+dr_args)
+
+# Obssesion 
+def obsession()->float:
+    args=[
+        ('Did you forget to take your medication to manage','mental',None),
+        ('Are you addicted to','addiction',None)     
+    ]
+    return ask_questions('o.yaml',args)  
+
+def pos_reinforcement()->float:
+    args = [
+        ('Have you lived in accordance with','values',None),
+        ('Have you done your daily','daily',None),
+        ('Have you been a part of a','fellowship','fellowship today?')]
+    return ask_questions('pr.yaml',args)
+
+## TODO: 
+def measure_daily_program() -> None:    
     if new_entry_valid():
         day = get_date()
         wp,nr,o,pr = will_power(),neg_reinforcement(),obsession(),pos_reinforcement()
@@ -80,12 +86,11 @@ def measure_daily_program():
         run('clear')
         print(f'JUST FOR TODAY ~ {day}\n\nWill Power: {wp} | Negative Reinforcement: {nr} | Obsesion: {o} | Positive Reinforcement: {pr}')
         print(f'Program Value: {p}')
-        data = [day,wp,nr,o,pr,p]
-        write_data(data)
+        write_data([day,wp,nr,o,pr,p])
         return
-    print('Program Value for Today is already reccorded...')
+    print('Program Value for Today is already recorded...')
     
-# function to show data
+
 def show_progress():
     df=pd.read_csv(DEFAULT_DAT_FILE)
     ys = [i for i in df.columns if i != 'date']
@@ -96,9 +101,11 @@ def show_progress():
     plt.title('Sobriety Program Tracker')
     plt.show()
 
+
 def main():
-    measure_daily_program()
-    show_progress()    
+    measure_daily_program(),show_progress()    
+
+
 
 if __name__ == '__main__':
     main()

