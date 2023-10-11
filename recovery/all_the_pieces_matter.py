@@ -7,10 +7,9 @@ from os import system as run
 from subprocess import getoutput as get 
 from matplotlib import pyplot as plt
 
-
 def setup_cfg()->None:
     parser=argparse.ArgumentParser()
-    parser.add_argument("-u",type=str,help="the users program",default='default_cfg')
+    parser.add_argument("-u",type=str,help="the program user",default='default_cfg')
     args=parser.parse_args()
     global USER
     global DAT_FILE
@@ -24,7 +23,7 @@ def load_yaml(filename: str) -> dict:
     return obj
 
 # function to write data to csv file 
-def write_data(data:list[float]) -> None:
+def write_data(data:list[int]) -> None:
     with open(DAT_FILE, 'a') as f:
         writer = csv.writer(f)
         writer.writerow(data)
@@ -85,38 +84,48 @@ def pos_reinforcement()->float:
 def normalize_as_pct(val:float or int,min_val:float or int,val_range:float or int)->int:
     return round(100*((val - min_val)/val_range))
 
-# TODO: Throwaway function to re-write the old df's to values that are more readable.
-def normalize_df():
-    # map() all fields of df that are not program with norm(x,0,1) function 
-    # map() the program field with norm(x,-1,4) function : given the equation is wp+nr-(o-pr)
-    # re-write to new .csv file
-    return 
-# TODO: need to apply the normalization function to this after ^^ is done 
+def norm_var(vals: pd.Series)->int:
+    return normalize_as_pct(vals,0,1)
+
 def measure_daily_program() -> None:    
     if new_entry_valid():
         day = get_date()
-        wp,nr,o,pr = will_power(),neg_reinforcement(),obsession(),pos_reinforcement()
-        p = wp+nr-(o-pr)
+        wp,nr,o,pr = list(map(lambda x: norm_var(x),[will_power(),neg_reinforcement(),obsession(),pos_reinforcement()]))
+        p=normalize_as_pct(wp+nr-(o-pr),-100,400)
         run('clear')
         print(f'JUST FOR TODAY ~ {day}\n\nWill Power: {wp} | Negative Reinforcement: {nr} | Obsesion: {o} | Positive Reinforcement: {pr}')
         print(f'Program Value: {p}')
-        write_data([day,wp,nr,o,pr,p])
+        data=[day,wp,nr,o,pr,p]
+        write_data(data)
         return
     print('Program Value for Today is already recorded...')
 
-#TODO: this should be stored and re-written for the Kivy integration
-def show_progress()->None:
+def get_formatted_df():
     df=pd.read_csv(DAT_FILE)
     ys = [i for i in df.columns if i != 'date']
     df.set_index('date')
-    df.index = pd.to_datetime(df.date,yearfirst=True)
+    df.index=pd.to_datetime(df.date,yearfirst=True)
     df = df[ys]
-    df.plot()
-    plt.title('Sobriety Program Tracker')
+    return df
+
+#TODO: this should be stored and re-written for the Kivy integration
+def show_progress()->None:
+    df = get_formatted_df()
+    # this is the fig/ax configuration for the tracker
+    df.plot(style=['ms-','go-','y^-','bs-','rs-'])
+    plt.ylim(bottom=0,top=110)
+    plt.legend(loc='lower left')
+    plt.axhspan(ymin=0,ymax=25,color='red')
+    plt.text(x=df.index[len(df.index)/2],y=15, s='Relapse Danger Zone', fontsize=12, va='center', ha='center')
+    plt.xlabel('Date [year-month-day]',fontsize=12)
+    plt.ylabel('Percentage of Maximum Value [%]',fontsize=12)
+    plt.title('Sobriety Program Tracker',fontsize=20)
     plt.show()
 
 def main():
-    setup_cfg(),measure_daily_program(),show_progress()    
+    setup_cfg()
+    measure_daily_program()
+    show_progress()    
 
 if __name__ == '__main__':
     main()
