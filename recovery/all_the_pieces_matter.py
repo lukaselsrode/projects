@@ -7,6 +7,9 @@ from os import system as run
 from subprocess import getoutput as get 
 from matplotlib import pyplot as plt
 
+
+DEFAULT_DANGER_ZONE = 25
+
 def setup_cfg()->None:
     parser=argparse.ArgumentParser()
     parser.add_argument("-u",type=str,help="the program user",default='default_cfg')
@@ -115,16 +118,17 @@ def show_progress()->None:
     df.plot(style=['ms-','go-','y^-','bs-','rs-'])
     plt.ylim(bottom=0,top=110)
     plt.legend(loc='lower left')
-    plt.axhspan(ymin=0,ymax=25,color='red')
-    plt.text(x=df.index[len(df.index)/2],y=15, s='Relapse Danger Zone', fontsize=12, va='center', ha='center')
+    plt.axhspan(ymin=0,ymax=DEFAULT_DANGER_ZONE,color='red')
+    plt.text(x=df.index[round(len(df.index)/2)],y=15, s='Relapse Danger Zone', fontsize=12, va='center', ha='center')
     plt.xlabel('Date [year-month-day]',fontsize=12)
     plt.ylabel('Percentage of Maximum Value [%]',fontsize=12)
     plt.title('Sobriety Program Tracker',fontsize=20)
+    # show the DF or store the DF
     plt.show()
-
+    
 def main():
     setup_cfg()
-    measure_daily_program()
+    #measure_daily_program()
     show_progress()    
 
 if __name__ == '__main__':
