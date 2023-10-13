@@ -7,8 +7,9 @@ from os import system as run
 from subprocess import getoutput as get 
 from matplotlib import pyplot as plt
 
-
 DEFAULT_DANGER_ZONE = 25
+DEFAULT_SHOW_AFTER_UPDATE=True
+
 
 def setup_cfg()->None:
     parser=argparse.ArgumentParser()
@@ -60,16 +61,13 @@ def ask_questions(cfg_file:str,prompts_cfg:list[tuple[str,str,str or None]]) -> 
     for pre,field,suf in prompts_cfg:q+=create_field_questions(pre,file[field],suf)
     return return_mean_term(q)
 
-# Measuring Willpower
 def will_power() -> float:
     return ask_questions('wp.yaml',[('Do you want to','desires',None)])
 
-# Negative Reinforcement
 def neg_reinforcement() -> float:
     dq_args,dr_args=list(tuple(zip(['Are you']*3,['restrictions','boundaries','accountability'],3*[None]))),[('Have you','relapse',None)]
     return ask_questions('nr.yaml',dq_args+dr_args)
 
-# Obssesion 
 def obsession()->float:
     args=[
         ('Did you forget to take your medication to manage','mental',None),
@@ -93,11 +91,9 @@ def norm_var(vals: pd.Series)->int:
 def measure_daily_program() -> None:    
     if new_entry_valid():
         day = get_date()
-        wp,nr,o,pr = list(map(lambda x: norm_var(x),[will_power(),neg_reinforcement(),obsession(),pos_reinforcement()]))
+        wp,nr,o,pr = list(map(norm_var,[will_power(),neg_reinforcement(),obsession(),pos_reinforcement()]))
         p=normalize_as_pct(wp+nr-(o-pr),-100,400)
         run('clear')
-        print(f'JUST FOR TODAY ~ {day}\n\nWill Power: {wp} | Negative Reinforcement: {nr} | Obsesion: {o} | Positive Reinforcement: {pr}')
-        print(f'Program Value: {p}')
         data=[day,wp,nr,o,pr,p]
         write_data(data)
         return
@@ -111,25 +107,30 @@ def get_formatted_df():
     df = df[ys]
     return df
 
-#TODO: this should be stored and re-written for the Kivy integration
-def show_progress()->None:
-    df = get_formatted_df()
+def set_plot_options(df):
     # this is the fig/ax configuration for the tracker
     df.plot(style=['ms-','go-','y^-','bs-','rs-'])
     plt.ylim(bottom=0,top=110)
-    plt.legend(loc='lower left')
+    plt.legend(loc='lower right')
     plt.axhspan(ymin=0,ymax=DEFAULT_DANGER_ZONE,color='red')
     plt.text(x=df.index[round(len(df.index)/2)],y=15, s='Relapse Danger Zone', fontsize=12, va='center', ha='center')
     plt.xlabel('Date [year-month-day]',fontsize=12)
     plt.ylabel('Percentage of Maximum Value [%]',fontsize=12)
     plt.title('Sobriety Program Tracker',fontsize=20)
-    # show the DF or store the DF
-    plt.show()
+
+def save_plot(debugging:bool=DEFAULT_SHOW_AFTER_UPDATE)->None:
+    user_program_img = f'./config/{USER}/graph.png'
+    plt.savefig(user_program_img)
+    if debugging:plt.show()
     
-def main():
+def store_daily_visualization()->None:
+    df=get_formatted_df()
+    set_plot_options(df),save_plot()
+    
+def main() -> None:
     setup_cfg()
-    #measure_daily_program()
-    show_progress()    
+    measure_daily_program()
+    store_daily_visualization()
 
 if __name__ == '__main__':
     main()
