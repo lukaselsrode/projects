@@ -1,0 +1,34 @@
+addiction:
+  default:
+  - sex
+  - cocaine
+  - alcohol
+  - gambling
+  - nicotine
+  - risk
+  - meth
+  - shopping
+  ex: Addictions that you have to a substance, behavior, or event
+  user:
+  - sex
+  - cocaine
+  - alcohol
+  - gambling
+  - nicotine
+  - risk
+  - meth
+  - shopping
+mental:
+  default:
+  - ADHD
+  - Borderline Personality Disorder
+  - OCD
+  - Social Anxiety
+  - Depression
+  ex: Mental health conditions that contribute to acting out on 'bad behavior'
+  user:
+  - ADHD
+  - Borderline Personality Disorder
+  - OCD
+  - Social Anxiety
+  - Depression

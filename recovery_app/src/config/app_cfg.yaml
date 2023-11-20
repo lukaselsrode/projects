@@ -1,0 +1,8 @@
+paths:
+  - cfg_root: &cfg_root config/user_data/
+  - dat_file: *cfg_root 
+  - img_file: 
+  - vars_dir: 
+main_page:
+measurement_page:
+config_page:
