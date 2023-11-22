@@ -80,7 +80,10 @@ class MainButtonLayout(BoxLayout):
         self.add_widget(self.measure_button)
 
     def get_about_page(self,instance):
-        print('getting tip jar...')
+        self.app.close()
+        TipJar = About()
+        TipJar.run()
+        self.app.run()
             
     def show_cfg_wheel(self, instance):
         vars = list(map(lambda i: i.split('.')[0], os.listdir(DEFAULT_PROGRAM_VAR_DIR)))
@@ -91,7 +94,8 @@ class MainButtonLayout(BoxLayout):
     def measure_prgrm(self, instance):
         self.app.close()
         Measure=ProgramMeasurementApp()
-        Measure.run(),self.app.run()
+        Measure.run()
+        self.app.run()
 
 
 class MainPageLayout(BoxLayout):

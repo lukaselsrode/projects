@@ -13,3 +13,31 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
+
+TODO: 
+    PRIORITY: 
+        - get functionality right []
+        - get the UI pretty []
+        - get the UI consitent []
+        - 
+    TASKS:
+        DEBUGING:
+            - measure view always clicking NO why ? []
+        ASTHETICS: 
+            -
+        FUNCTIONALITY:
+            - 
+
+    FILE CHANGES: 
+        config: 
+            - 
+        about.py:
+            - 
+        cfg.py:
+            -
+        main.py:
+            -
+        measure.py:
+            -
+        util.py:
+            -
