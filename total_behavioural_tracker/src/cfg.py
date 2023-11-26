@@ -15,7 +15,7 @@ BTN_HEIGHT = 80
 BTN_FONT_SIZE=30
 ACCEPT_COLOR,SH_CONFIG_COLOR='green','blue'
 # Text Input configuration
-INPUT_FONT_SIZE=24
+INPUT_FONT_SIZE=18
 
 class ConfigureVarKeyView(GridLayout):
     def __init__(self,file,var,data,app, **kwargs):
@@ -25,7 +25,7 @@ class ConfigureVarKeyView(GridLayout):
         self.cols, self.padding, self.spacing = GRID_LAYOUT
         # Create an anchor layout for the exit button
         exit_button_layout = AnchorLayout(anchor_x='right', anchor_y='top', size_hint=(1, 0.1))
-        exit_button = Button(text='Exit', size_hint=(0.1, 1),background_color='red')
+        exit_button = Button(text='Back', size_hint=(0.1, 1),background_color='red')
         exit_button.bind(on_release=self.exit_app)
         exit_button_layout.add_widget(exit_button)
         self.add_widget(exit_button_layout, index=0)
@@ -53,6 +53,9 @@ class ConfigureVarKeyView(GridLayout):
         self.app.stop()
 
     def reset_default(self, instance):
+        # TODO: This shit 
+        #display_txt = self.data['default'] if not self.data['user'] else self.data['user']
+        #display_txt= ''.join(list(map(lambda x : x.lower(),display_txt)))
         self.config_input.text = '\n'.join(self.data['default']) if not self.data['user'] else '\n'.join(self.data['user'])
         
     def accept_input(self, instance):

@@ -7,7 +7,6 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 
 
-
 AXES_FONT_SIZE=13
 TITLE_FONT_SIZE=20
 
@@ -100,9 +99,9 @@ def set_plot_options(df:pd.DataFrame) -> None:
     plt.legend(loc='lower right')
     plt.axhspan(ymin=0, ymax=25, color='red', alpha=0.4)
     plt.text(x=df.index[round(len(df.index) / 2)], y=15, s='Relapse Danger Zone', fontsize=12, va='center', ha='center')
-    plt.xlabel('Date [year-month-day]', fontsize=AXES_FONT_SIZE)
+    plt.xlabel('Time', fontsize=AXES_FONT_SIZE)
     plt.ylabel('Percentage Value [%]', fontsize=AXES_FONT_SIZE)
-    plt.title('Behavioral Tracker', fontsize=TITLE_FONT_SIZE)
+    plt.title('Total Behavioral Tracker', fontsize=TITLE_FONT_SIZE)
     plt.savefig(IMG_FILE)
 
 

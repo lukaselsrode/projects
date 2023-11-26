@@ -7,8 +7,13 @@ daily:
   - Learning
   ex: Daily activities you enjoy that contribute to your greater sense of purpose
   user:
-  - journaling
   - exercising
+  - journaling
+  - organizing
+  - creating
+  - advancing professionally
+  - learning
+  - communing with nature
 fellowship:
   default:
   - NA
@@ -17,7 +22,11 @@ fellowship:
   - Volunteering
   ex: Communities you enjoy being a part of that foster a greater sense of connection
     and meaning
-  user: []
+  user:
+  - NA
+  - Sports
+  - Tech/Engineering
+  - Volunteering
 values:
   default:
   - Truth
@@ -26,4 +35,8 @@ values:
   - Openness
   - Nature
   ex: Your core values you want to live and stand by
-  user: []
+  user:
+  - Truth
+  - Courage
+  - Innovation
+  - Nature

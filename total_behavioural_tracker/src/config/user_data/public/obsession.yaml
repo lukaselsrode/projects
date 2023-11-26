@@ -13,11 +13,14 @@ addiction:
   - sex
   - cocaine
   - alcohol
-  - gambling
   - nicotine
   - risk
-  - meth
-  - shopping
+  - speed
+  - weed
+  - beating the system
+  - work
+  - love
+  - power
 mental:
   default:
   - ADHD
@@ -28,7 +31,5 @@ mental:
   ex: Mental health conditions that contribute to acting out on 'bad behavior'
   user:
   - ADHD
-  - Borderline Personality Disorder
-  - OCD
-  - Social Anxiety
-  - Depression
+  - IED
+  - Bipolar 2

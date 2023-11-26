@@ -25,7 +25,7 @@ class QuestionView(GridLayout):
         self.cols,self.rows= PAGE_LAYOUT # More rows for better distribution of space
         # Create an anchor layout for the exit button
         exit_button_layout = AnchorLayout(anchor_x='right', anchor_y='top', size_hint=(1, 0.1))
-        exit_button = Button(text='Exit', size_hint=(0.1, 1),background_color='red')
+        exit_button = Button(text='Back', size_hint=(0.1, 1),background_color='red')
         exit_button.bind(on_release=self.exit_app)
         exit_button_layout.add_widget(exit_button)
         self.add_widget(exit_button_layout, index=0)
