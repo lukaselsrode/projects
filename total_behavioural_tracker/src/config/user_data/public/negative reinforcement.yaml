@@ -1,4 +1,4 @@
-accountability:
+Accountability:
   default:
   - not letting people get under your skin
   - not thinking you are better than others
@@ -13,7 +13,7 @@ accountability:
   - not thinking you should rule the world
   - not isolating
   - not hating the world
-boundaries:
+Boundaries:
   default:
   - Not going to bars or clubs
   - Keeping contact with family members purposeful
@@ -21,13 +21,13 @@ boundaries:
   ex: Personal boundaries which allow you to not put yourself in a situation where
     you typically would act out on 'bad behavior'
   user:
-  - Not accepting any form of belittlement
+  - not accepting any form of belittlement
   - having clear expectations in all professional relationships
   - working only during work hours
-  - Getting to sleep by 10:30 PM
+  - getting to sleep by 10:30 pm
   - not feeling the need to change yourself
-  - Not hanging out in large groups of people
-relapse:
+  - not hanging out in large groups of people
+Relapse:
   default:
   - Taking mood-altering substances
   - Drinking alcohol
@@ -36,10 +36,10 @@ relapse:
   ex: What you would define as a 'relapse', either behaviorally or substance consumption
     wise
   user:
-  - not run out of CNS-stimulants before prescription is refilled
+  - not run out of cns-stimulants before prescription is refilled
   - not taken any mood altering compounds without medical instruction
   - not started cruising for sex
-restrictions:
+Restrictions:
   default:
   - On probation
   - Mandatory court ordered drug testing
@@ -49,7 +49,7 @@ restrictions:
   - residing in sober-living
   - doing outpatient therapy
   - having no emotionally involved relationships
-  - making sure you're in bed by 10:30PM
+  - making sure you're in bed by 10:30pm
   - not frequenting spaces with drug and alcohol use
   - not playing video-games during work hours
   - not ordering in food

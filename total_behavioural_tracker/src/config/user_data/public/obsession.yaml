@@ -1,4 +1,4 @@
-addiction:
+Addiction:
   default:
   - sex
   - cocaine
@@ -21,7 +21,7 @@ addiction:
   - work
   - love
   - power
-mental:
+Mental:
   default:
   - ADHD
   - Borderline Personality Disorder
@@ -30,6 +30,6 @@ mental:
   - Depression
   ex: Mental health conditions that contribute to acting out on 'bad behavior'
   user:
-  - ADHD
-  - IED
-  - Bipolar 2
+  - adhd
+  - ied
+  - bipolar 2

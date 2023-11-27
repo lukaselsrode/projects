@@ -53,14 +53,13 @@ class ConfigureVarKeyView(GridLayout):
         self.app.stop()
 
     def reset_default(self, instance):
-        # TODO: This shit 
-        #display_txt = self.data['default'] if not self.data['user'] else self.data['user']
-        #display_txt= ''.join(list(map(lambda x : x.lower(),display_txt)))
-        self.config_input.text = '\n'.join(self.data['default']) if not self.data['user'] else '\n'.join(self.data['user'])
+        display_txt = self.data['default'] if not self.data['user'] else self.data['user']
+        self.config_input.text = '\n'.join(list(map(lambda x : x.lower(),display_txt)))
         
     def accept_input(self, instance):
-        user_input_keys= list(filter(lambda x: x != '',self.config_input.text.split('\n')))
-        update_var_key_data(self.file,self.var,user_input_keys),self.app.next_screen()
+        user_input_keys= list(filter(lambda x: x != '',''.join(list(map(lambda x:x.lower(),self.config_input.text))).split('\n')))
+        update_var_key_data(self.file,self.var,user_input_keys)
+        self.app.next_screen()
 
 class ConfigureApplication(App):
     def __init__(self,var_file, **kwargs):

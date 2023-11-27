@@ -14,7 +14,7 @@ QUESTION_SIZE_HINT_Y = 0.5
 BTN_FONT_SIZE = 30
 BTN_SIZE_HINT=(0.5,0.25)   
 SPACE_BTWEEN_BTNS = 50     
-NO_COLOR,YES_COLOR = 'red','green'
+NO_COLOR,YES_COLOR = 'orange','green'
 
 class QuestionView(GridLayout):
     def __init__(self,app,**kwargs):

@@ -61,24 +61,24 @@ def mk_questions(cfg_file:str,prompts_cfg:list[tuple[str,str,str or None]]) -> l
     return q
 
 def will_power() -> float:
-    return mk_questions('willpower',[('Do you want to','desires',None)])
+    return mk_questions('willpower',[('Do you want to','Desires',None)])
 
 def neg_reinforcement() -> float:
-    dq_args,dr_args=list(tuple(zip(['Are you']*3,['restrictions','boundaries','accountability'],3*[None]))),[('Have you','relapse',None)]
+    dq_args,dr_args=list(tuple(zip(['Are you']*3,['Restrictions','Boundaries','Accountability'],3*[None]))),[('Have you','Relapse',None)]
     return mk_questions('negative reinforcement',dq_args+dr_args)
 
 def obsession()->float:
     args=[
-        ('Did you forget to take your medication to manage','mental',None),
-        ('Are you addicted to','addiction',None)     
+        ('Did you forget to take your medication to manage','Mental',None),
+        ('Are you addicted to','Addiction',None)     
     ]
     return mk_questions('obsession',args)  
 
 def pos_reinforcement()->float:
     args = [
-        ('Have you lived in accordance with','values',None),
-        ('Have you done your daily','daily',None),
-        ('Have you been a part of a','fellowship','fellowship today?')]
+        ('Have you lived in accordance with','Values',None),
+        ('Have you done your daily','Daily',None),
+        ('Have you been a part of a','Fellowship','fellowship today?')]
     return mk_questions('positive reinforcement',args)
 
 def normalize_as_pct(val:float or int,min_val:float or int,val_range:float or int)->int:
@@ -100,8 +100,7 @@ def set_plot_options(df:pd.DataFrame) -> None:
     plt.axhspan(ymin=0, ymax=25, color='red', alpha=0.4)
     plt.text(x=df.index[round(len(df.index) / 2)], y=15, s='Relapse Danger Zone', fontsize=12, va='center', ha='center')
     plt.xlabel('Time', fontsize=AXES_FONT_SIZE)
-    plt.ylabel('Percentage Value [%]', fontsize=AXES_FONT_SIZE)
-    plt.title('Total Behavioral Tracker', fontsize=TITLE_FONT_SIZE)
+    plt.ylabel('Total % Value', fontsize=AXES_FONT_SIZE)
     plt.savefig(IMG_FILE)
 
 

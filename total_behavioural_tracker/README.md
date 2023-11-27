@@ -1,16 +1,20 @@
 
 
 Formating: 
-	-> lowercase on text input for measure view []
-	-> Capitalization on Key Values on Config variables []
-	-> Exit Buttons made standard not red []
-	-> Make a lable instead of plot title []
-	-> Make About view wayyyyy nicer []
+	-> lowercase on text input for measure view [x]
+	-> Capitalization on Key Values on Config variables [x]
+	-> Make a lable instead of plot title [x]
+	-> Make About view wayyyyy nicer [x]
 
 Features:
-	-> Pop Up for if measurement already done []
-	-> Pop Up for confirming update in config changes []
+	Setup Popups:
+		-> Pop Up for if measurement already done []
+		-> Pop Up for confirming update in config changes []
+
 	-> Setup a Tip Jar []
+		=> Need to setup a paywall []
+		=> OpenUrl to paywall ? []
+
 	-> Daily Notification []
 
 Nice to have:

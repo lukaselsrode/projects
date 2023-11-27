@@ -2,6 +2,7 @@ import os
 import kivy
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
@@ -103,7 +104,9 @@ class MainPageLayout(BoxLayout):
         super(MainPageLayout, self).__init__(**kwargs)
         self.app=app
         self.orientation = 'vertical'
+        self.app_title = Label(text='Total Behavioral Tracker',color='blue',pos_hint={'x':0.4,'y':0},size_hint=(0.2,0.2),font_size=45,italic=True)
         self.linegraph, self.main_buttons = MainLineGraph(), MainButtonLayout(self.app)
+        self.add_widget(self.app_title)
         self.add_widget(self.linegraph)
         self.add_widget(self.main_buttons)
 

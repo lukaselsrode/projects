@@ -1,4 +1,4 @@
-daily:
+Daily:
   default:
   - Exercising
   - Journaling
@@ -14,7 +14,7 @@ daily:
   - advancing professionally
   - learning
   - communing with nature
-fellowship:
+Fellowship:
   default:
   - NA
   - Sports
@@ -23,11 +23,11 @@ fellowship:
   ex: Communities you enjoy being a part of that foster a greater sense of connection
     and meaning
   user:
-  - NA
-  - Sports
-  - Tech/Engineering
-  - Volunteering
-values:
+  - na
+  - sports
+  - tech/engineering
+  - volunteering
+Values:
   default:
   - Truth
   - Courage
@@ -36,7 +36,7 @@ values:
   - Nature
   ex: Your core values you want to live and stand by
   user:
-  - Truth
-  - Courage
-  - Innovation
-  - Nature
+  - truth
+  - courage
+  - innovation
+  - nature
