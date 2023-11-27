@@ -48,7 +48,11 @@ def get_date() -> str:
 # function to check if the day is valid
 def new_entry_valid()-> bool:
     return False if str(get(f"tail -n 1 {DAT_FILE} | cut -d ',' -f 1")) == get_date() else True
-                
+
+# function to earase todays measurment
+def overwrite_last_entry() -> None:
+    return                     
+
 # function to create a set of questions from lists in config
 def create_field_questions(prefix:str,entries:list[str],suffix:str)->list[str]:
     if not suffix: suffix = '?'

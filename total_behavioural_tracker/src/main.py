@@ -6,10 +6,13 @@ from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
-# these are the other modules for the diffrent views
+from kivy.uix.popup import Popup
+# these are the other modules for the different views
 from about import About
 from cfg import ConfigureApplication
 from measure import ProgramMeasurementApp
+# This is for the pop-up to ask if you want to overwrite existing data if the data already exists for todays measurement
+from util import new_entry_valid, overwrite_last_entry
 
 # THIS IS THE APPLICATION CONFIG
 kivy.logger.Logger.setLevel("DEBUG")
@@ -25,7 +28,7 @@ CFG_BUTTON_COLOR, MEASURE_BUTTON_COLOR = 'red','green'
 CFG_VAR_SIZE_HINT_Y = None
 CFG_VAR_HEIGHT = 60
 CFG_VAR_FONT_SIZE = 18
-CFG_VAR_BUTTON_COLOR = 'yellow'
+CFG_VAR_BUTTON_COLOR = 'orange'
 
 class VariableButton(Button):
     def __init__(self,app, **kwargs):
@@ -91,12 +94,43 @@ class MainButtonLayout(BoxLayout):
         dropdown = VarsDropDown(self.app,vars)
         dropdown.bind(on_select=lambda instance, x: setattr(self.configure_button, 'text', x))
         dropdown.open(self.configure_button)
-    
+
+
     def measure_prgrm(self, instance):
+        if new_entry_valid():
+            self.start_measurement()
+        else:
+            self.confirm_overwrite()
+
+    def start_measurement(self):
         self.app.close()
-        Measure=ProgramMeasurementApp()
+        Measure = ProgramMeasurementApp()
         Measure.run()
         self.app.run()
+
+    def confirm_overwrite(self):
+        box = BoxLayout(orientation='vertical', padding=(10))
+        msg = Label(text='You have already measured your program today. Do you want to overwrite?')
+        btn_layout = BoxLayout(size_hint_y=None, height=30, spacing=10)
+        yes_btn = Button(text='Yes', on_release=self.on_confirm)
+        no_btn = Button(text='No', on_release=self.on_cancel)
+        btn_layout.add_widget(yes_btn)
+        btn_layout.add_widget(no_btn)
+        box.add_widget(msg)
+        box.add_widget(btn_layout)
+
+        self.popup = Popup(title='Confirm Overwrite', content=box,
+                           size_hint=(None, None), size=(400, 200),
+                           auto_dismiss=False)
+        self.popup.open()
+
+    def on_confirm(self, instance):
+        self.popup.dismiss()
+        overwrite_last_entry()
+        self.start_measurement()
+
+    def on_cancel(self, instance):
+        self.popup.dismiss()            
 
 
 class MainPageLayout(BoxLayout):
