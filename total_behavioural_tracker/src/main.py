@@ -23,7 +23,7 @@ DEFAULT_IMG = f'{DEFAULT_USER_CFG_PATH}graph.png'
 MAIN_BUTTON_LAYOUT_SIZE = (1, 0.2)
 MAIN_BUTTON_SIZE = (0.25, 1)
 MAIN_BUTTON_FONT_SIZE = 30
-CFG_BUTTON_COLOR, MEASURE_BUTTON_COLOR = 'red','green'
+CFG_BUTTON_COLOR, MEASURE_BUTTON_COLOR = 'yellow','green'
 # VARIABLE CFG BUTTON
 CFG_VAR_SIZE_HINT_Y = None
 CFG_VAR_HEIGHT = 60
@@ -97,10 +97,7 @@ class MainButtonLayout(BoxLayout):
 
 
     def measure_prgrm(self, instance):
-        if new_entry_valid():
-            self.start_measurement()
-        else:
-            self.confirm_overwrite()
+        self.start_measurement() if new_entry_valid() else self.confirm_overwrite()
 
     def start_measurement(self):
         self.app.close()
@@ -110,7 +107,7 @@ class MainButtonLayout(BoxLayout):
 
     def confirm_overwrite(self):
         box = BoxLayout(orientation='vertical', padding=(10))
-        msg = Label(text='You have already measured your program today. Do you want to overwrite?')
+        msg = Label(text='You have already measured your program today.\n Do you want to re-measure it?')
         btn_layout = BoxLayout(size_hint_y=None, height=30, spacing=10)
         yes_btn = Button(text='Yes', on_release=self.on_confirm)
         no_btn = Button(text='No', on_release=self.on_cancel)

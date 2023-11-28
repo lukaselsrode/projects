@@ -55,10 +55,13 @@ class ConfigureVarKeyView(GridLayout):
     def reset_default(self, instance):
         display_txt = self.data['default'] if not self.data['user'] else self.data['user']
         self.config_input.text = '\n'.join(list(map(lambda x : x.lower(),display_txt)))
-        
+    
+    # TODO: add a pop-up here if there is already a set configuration for 'user' key in config for that config var    
     def accept_input(self, instance):
+        
         user_input_keys= list(filter(lambda x: x != '',''.join(list(map(lambda x:x.lower(),self.config_input.text))).split('\n')))
         update_var_key_data(self.file,self.var,user_input_keys)
+        
         self.app.next_screen()
 
 class ConfigureApplication(App):

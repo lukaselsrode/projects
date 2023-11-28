@@ -9,10 +9,10 @@ Formating:
 
 Features:
 	Setup Popups:
-		- Pop Up for if measurement already done []
+		- Pop Up for if measurement already done [x]
 			- ask if you want to overwrite the daily measurement [x]
-			- write the overwrite function in util.py []
-			- make sure the pop-up text isn't whack and actually fits in the pop-up box []
+			- write the overwrite function in util.py [x]
+			- make sure the pop-up text isn't whack and actually fits in the pop-up box [x]
 
 		- Pop Up for confirming update in config changes []
 

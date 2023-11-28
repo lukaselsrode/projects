@@ -4,7 +4,6 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.anchorlayout import AnchorLayout
 from util import will_power, pos_reinforcement,neg_reinforcement,obsession, normalize_as_pct,store_measurement
-from time import sleep
 # View Layout
 PAGE_LAYOUT = 1,3
 # Question
@@ -87,9 +86,7 @@ class ProgramMeasurementApp(App):
         
     def clear_to_next_question(self):
         self.root.clear_widgets()
-        sleep(0.2)
         self.root.add_widget(self.current_question_view())
-        sleep(0.2)
 
     def current_question_view(self):
         return QuestionView(self)

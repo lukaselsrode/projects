@@ -51,7 +51,9 @@ def new_entry_valid()-> bool:
 
 # function to earase todays measurment
 def overwrite_last_entry() -> None:
-    return                     
+    df = get_formatted_df()
+    df = df.drop(df.index[-1])
+    df.to_csv(DAT_FILE)
 
 # function to create a set of questions from lists in config
 def create_field_questions(prefix:str,entries:list[str],suffix:str)->list[str]:
