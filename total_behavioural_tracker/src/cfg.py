@@ -15,9 +15,11 @@ VAR_EX_CFG = 28,'white'
 # Button configurations
 BTN_HEIGHT = 80
 BTN_FONT_SIZE=30
-ACCEPT_COLOR,SH_CONFIG_COLOR='green','blue'
+ACCEPT_COLOR,LOAD_CFG_COLOR='green','blue'
 # Text Input configuration
 INPUT_FONT_SIZE=18
+# Pop-up configuration
+POPUP_SIZE = (400,200)
 
 class ConfigureVarKeyView(GridLayout):
     def __init__(self,file,var,data,app, **kwargs):
@@ -43,7 +45,7 @@ class ConfigureVarKeyView(GridLayout):
 
         self.button_layout = GridLayout(cols=2, row_force_default=True, row_default_height=BTN_HEIGHT) # UMMMM wha
         
-        self.reset_button = Button(text="Load",font_size=BTN_FONT_SIZE,background_color=SH_CONFIG_COLOR)
+        self.reset_button = Button(text="Load",font_size=BTN_FONT_SIZE,background_color=LOAD_CFG_COLOR)
         self.reset_button.bind(on_press=self.reset_default),self.button_layout.add_widget(self.reset_button)
 
         self.accept_button = Button(text="Accept",font_size=BTN_FONT_SIZE,background_color=ACCEPT_COLOR)
@@ -69,7 +71,7 @@ class ConfigureVarKeyView(GridLayout):
         box.add_widget(msg)
         box.add_widget(btn_layout)
         self.popup = Popup(title=f'{self.var} confirmation', content=box,
-                           size_hint=(None, None), size=(400, 200),
+                           size_hint=(None, None), size=POPUP_SIZE,
                            auto_dismiss=False)
         self.popup.open()
         return
@@ -106,3 +108,4 @@ class ConfigureApplication(App):
             self.root.clear_widgets(),self.root.add_widget(self.current_cfg_view())
             return
         self.stop()
+

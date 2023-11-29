@@ -1,46 +1,74 @@
-paths:
-  cfg_root: &cfg_root 'config/user_data/'  
-  dat_file: &dat_file *cfg_root 'data.csv'  
-  img_file: &img_file *cfg_root 'graph.png'  
-  vars_dir: &vars_dir *cfg_root 'public/'  
-
 main:
-  button_layout_size: [1, 0.2]
-  button_size: [0.25, 1]
-  button_font_size: 30
-  cfg_button_color: 'yellow'
-  measure_button_color: 'green'
-  var_size_hint_y: null
-  var_height: 60
-  var_font_size: 18
-  var_button_color: 'orange'
+  title:
+    size: [0.2, 0.2]
+    font_size: 45
+    color: 'blue'
+  buttons:
+    layout_size: [1, 0.2]
+    size: [0.25, 1]
+    font_size: 30
+    cfg_color: 'yellow'
+    measure_color: 'green'
+  dropdown:
+    var_height: 60
+    var_font_size: 18
+    var_button_color: 'orange'
+  about:
+    size: [0.05, 1]
+    color: 'cyan'
+  popup:
+    size: [400, 200]
 
 cfg:
   grid_layout: [1, 10, 5]
-  var_name_cfg: [40, 'yellow']
-  var_ex_cfg: [28, 'white']
-  btn_height: 80
-  btn_font_size: 30
-  accept_color: 'green'
-  sh_config_color: 'blue'
-  input_font_size: 18
+  text:
+    var: [40, 'yellow']
+    explanation: [28, 'white']
+  buttons:
+    height: 80
+    font_size: 30
+    accept_color: 'green'
+    load_color: 'blue'
+  input:
+    font_size: 18
+  popup:
+    size: [400, 200]
 
 util:
+  paths:
+    cfg_root: 'config/user_data/'  
+    data: 'config/user_data/data.csv'  
+    img: 'config/user_data/graph.png'  
+    vars_dir: 'config/user_data/public/'
   axes_font_size: 13
-  title_font_size: 20
 
 measure:
   page_layout: [1, 3]
-  question_font_size: 40
-  question_size_hint_y: 0.5
-  btn_font_size: 30
-  btn_size_hint: [0.5, 0.25]
-  space_between_btns: 50
-  no_color: 'orange'
-  yes_color: 'green'
+  question:
+    font_size: 40
+    size_y: 0.5
+  buttons:
+    font_size: 30
+    size: [0.5, 0.25]
+    space: 50
+    no_color: 'orange'
+    yes_color: 'green'
 
 about:
-  creditor_url: "https://www.linkedin.com/in/michael-lenok-4919b659/"
-  theory_url: "https://en.wikipedia.org/wiki/Glasser's_choice_theory"
-  book_url: "https://www.amazon.com/"
-  repo_url: "https://github.com/lukaselsrode/projects/tree/main/total_behavioural_tracker"
+  urls:
+    creditor: "https://www.linkedin.com/in/michael-lenok-4919b659/"
+    theory: "https://en.wikipedia.org/wiki/Glasser's_choice_theory"
+    book: "https://www.amazon.com/"
+    repo: "https://github.com/lukaselsrode/projects/tree/main/total_behavioural_tracker"
+    tip: "https://buy.stripe.com/aEUcN71qN6Pv9Dq6oo"
+  title:
+    size: [0.1, 0.1]
+    font_size: 40
+  description:
+    font_size: 24
+  buttons:
+    size: [1, 0.25]
+    spacing: 10
+    font_size: 30
+    support_color: 'green'
+    contribute_color: 'cyan'

@@ -15,10 +15,13 @@ from measure import ProgramMeasurementApp
 from util import new_entry_valid, overwrite_last_entry
 
 # THIS IS THE APPLICATION CONFIG
-kivy.logger.Logger.setLevel("DEBUG")
 DEFAULT_USER_CFG_PATH = './config/user_data/'
 DEFAULT_PROGRAM_VAR_DIR = f'{DEFAULT_USER_CFG_PATH}public'
 DEFAULT_IMG = f'{DEFAULT_USER_CFG_PATH}graph.png'
+# FOR THE APPLICATION TITLE
+TITLE_SIZE_HINT = (0.2,0.2)
+TITLE_FONT_SIZE = 45
+TITLE_COLOR = 'blue'
 # MAIN BUTTON CFG
 MAIN_BUTTON_LAYOUT_SIZE = (1, 0.2)
 MAIN_BUTTON_SIZE = (0.25, 1)
@@ -29,6 +32,11 @@ CFG_VAR_SIZE_HINT_Y = None
 CFG_VAR_HEIGHT = 60
 CFG_VAR_FONT_SIZE = 18
 CFG_VAR_BUTTON_COLOR = 'orange'
+# ABOUT BUTTON
+ABT_SIZE_HINT = (0.05, 1)
+ABT_BUTTON_COLOR = 'cyan'
+# POP UP 
+POPUP_SIZE = (400,200)
 
 class VariableButton(Button):
     def __init__(self,app, **kwargs):
@@ -71,7 +79,7 @@ class MainButtonLayout(BoxLayout):
         self.orientation = 'horizontal'
         self.size_hint = MAIN_BUTTON_LAYOUT_SIZE
         # About button
-        self.about_button = Button(text='About', size_hint=(0.05, 1),background_color='cyan')
+        self.about_button = Button(text='About', size_hint=ABT_SIZE_HINT,background_color=ABT_BUTTON_COLOR)
         self.about_button.bind(on_release=self.get_about_page)
         self.add_widget(self.about_button)
         # config options
@@ -117,7 +125,7 @@ class MainButtonLayout(BoxLayout):
         box.add_widget(btn_layout)
 
         self.popup = Popup(title='Confirm Overwrite', content=box,
-                           size_hint=(None, None), size=(400, 200),
+                           size_hint=(None, None), size=POPUP_SIZE,
                            auto_dismiss=False)
         self.popup.open()
 
@@ -135,7 +143,7 @@ class MainPageLayout(BoxLayout):
         super(MainPageLayout, self).__init__(**kwargs)
         self.app=app
         self.orientation = 'vertical'
-        self.app_title = Label(text='Total Behavioral Tracker',color='blue',pos_hint={'x':0.4,'y':0},size_hint=(0.2,0.2),font_size=45,italic=True)
+        self.app_title = Label(text='Total Behavioral Tracker',color=TITLE_COLOR,pos_hint={'x':0.4,'y':0},size_hint=TITLE_SIZE_HINT,font_size=TITLE_FONT_SIZE,italic=True)
         self.linegraph, self.main_buttons = MainLineGraph(), MainButtonLayout(self.app)
         self.add_widget(self.app_title)
         self.add_widget(self.linegraph)

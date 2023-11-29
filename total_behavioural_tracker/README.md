@@ -3,9 +3,6 @@ Formating:
 	- OHHHH DON'T worry wayyy more to come once I get perfectionistic with this []
 
 Features:
-	- Setup a Tip Jar [x]
-		- Need to setup a paywall [x]
-		- OpenUrl to paywall ? [x]
 	- Daily Notification []
 
 Deployment Testing: 

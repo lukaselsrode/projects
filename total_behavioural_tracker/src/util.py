@@ -8,7 +8,6 @@ import seaborn as sns
 
 
 AXES_FONT_SIZE=13
-TITLE_FONT_SIZE=20
 
 global DAT_FILE
 global VARS_DIR
@@ -17,6 +16,16 @@ CFG_ROOT='config/user_data/'
 DAT_FILE = f'{CFG_ROOT}data.csv'
 IMG_FILE = f'{CFG_ROOT}graph.png'
 VARS_DIR = f'{CFG_ROOT}public/'
+
+
+def load_cfg()->dict:
+    with open('config/app_cfg.yaml','r') as f:
+        cfg = yaml.safe_load(f)
+    return cfg
+
+## TODO: 
+def load_page_cfg():
+    return load_cfg()[__file__.split('/')[-1].rstrip('.py')]
 
 # a function to load the yaml files where the users terms are configured
 def load_variable_data(varname)->dict:
