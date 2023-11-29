@@ -1,21 +1,12 @@
-
-
 Formating: 
+	- Need to port everything into the config file to make shit easier to standardize []
 	- OHHHH DON'T worry wayyy more to come once I get perfectionistic with this []
 
 Features:
-	- Setup Popups [x]
-		- main.py [x]
-		- cfg.py [x]
-
 	- Setup a Tip Jar []
 		- Need to setup a paywall []
 		- OpenUrl to paywall ? []
-
 	- Daily Notification []
-
-Nice to have:
-	- global config file []
 
 Deployment Testing: 
 	- Security Testing []
@@ -24,7 +15,6 @@ Deployment Testing:
 	- IOS []
 	- Android []
 
-
 From Micheal: 
 	- About Page blurb properly explaining the equation []
 	- Ref for book []
@@ -32,4 +22,3 @@ From Micheal:
 Submission:
 	- GooglePlay []
 	- AppleStore []
-

@@ -1,8 +1,8 @@
 paths:
   cfg_root: &cfg_root 'config/user_data/'  
-  dat_file: &dat_file 'config/user_data/data.csv'  
-  img_file: &img_file 'config/user_data/graph.png'  
-  vars_dir: &vars_dir 'config/user_data/public'  
+  dat_file: &dat_file *cfg_root 'data.csv'  
+  img_file: &img_file *cfg_root 'graph.png'  
+  vars_dir: &vars_dir *cfg_root 'public/'  
 
 main:
   button_layout_size: [1, 0.2]
