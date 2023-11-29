@@ -1,6 +1,8 @@
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.popup import Popup
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
@@ -56,13 +58,33 @@ class ConfigureVarKeyView(GridLayout):
         display_txt = self.data['default'] if not self.data['user'] else self.data['user']
         self.config_input.text = '\n'.join(list(map(lambda x : x.lower(),display_txt)))
     
-    # TODO: add a pop-up here if there is already a set configuration for 'user' key in config for that config var    
-    def accept_input(self, instance):
-        
-        user_input_keys= list(filter(lambda x: x != '',''.join(list(map(lambda x:x.lower(),self.config_input.text))).split('\n')))
-        update_var_key_data(self.file,self.var,user_input_keys)
-        
+    def confirm_new_config(self):
+        box = BoxLayout(orientation='vertical', padding=(10))
+        msg = Label(text=f"Set {self.var} variable configuration \n for your {self.file.rstrip('.yaml')} ?")
+        btn_layout = BoxLayout(size_hint_y=None, height=30, spacing=10)
+        yes_btn = Button(text='Yes', on_release=self.write_new_config)
+        no_btn = Button(text='No', on_release=self.cancel_popup)
+        btn_layout.add_widget(yes_btn)
+        btn_layout.add_widget(no_btn)
+        box.add_widget(msg)
+        box.add_widget(btn_layout)
+        self.popup = Popup(title=f'{self.var} confirmation', content=box,
+                           size_hint=(None, None), size=(400, 200),
+                           auto_dismiss=False)
+        self.popup.open()
+        return
+
+    def cancel_popup(self,instance):
+        self.popup.dismiss()
+    
+    def write_new_config(self,instance):
+        update_var_key_data(self.file,self.var,self.user_input_keys)
+        self.popup.dismiss()
         self.app.next_screen()
+        
+    def accept_input(self, instance):
+        self.user_input_keys= list(filter(lambda x: x != '',''.join(list(map(lambda x:x.lower(),self.config_input.text))).split('\n')))
+        self.write_new_config() if not self.data['user'] else self.confirm_new_config() 
 
 class ConfigureApplication(App):
     def __init__(self,var_file, **kwargs):

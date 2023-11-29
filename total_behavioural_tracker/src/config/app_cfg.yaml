@@ -1,8 +1,46 @@
 paths:
-  - cfg_root: &cfg_root config/user_data/
-  - dat_file: *cfg_root 
-  - img_file: 
-  - vars_dir: 
-main_page:
-measurement_page:
-config_page:
+  cfg_root: &cfg_root 'config/user_data/'  
+  dat_file: &dat_file 'config/user_data/data.csv'  
+  img_file: &img_file 'config/user_data/graph.png'  
+  vars_dir: &vars_dir 'config/user_data/public'  
+
+main:
+  button_layout_size: [1, 0.2]
+  button_size: [0.25, 1]
+  button_font_size: 30
+  cfg_button_color: 'yellow'
+  measure_button_color: 'green'
+  var_size_hint_y: null
+  var_height: 60
+  var_font_size: 18
+  var_button_color: 'orange'
+
+cfg:
+  grid_layout: [1, 10, 5]
+  var_name_cfg: [40, 'yellow']
+  var_ex_cfg: [28, 'white']
+  btn_height: 80
+  btn_font_size: 30
+  accept_color: 'green'
+  sh_config_color: 'blue'
+  input_font_size: 18
+
+util:
+  axes_font_size: 13
+  title_font_size: 20
+
+measure:
+  page_layout: [1, 3]
+  question_font_size: 40
+  question_size_hint_y: 0.5
+  btn_font_size: 30
+  btn_size_hint: [0.5, 0.25]
+  space_between_btns: 50
+  no_color: 'orange'
+  yes_color: 'green'
+
+about:
+  creditor_url: "https://www.linkedin.com/in/michael-lenok-4919b659/"
+  theory_url: "https://en.wikipedia.org/wiki/Glasser's_choice_theory"
+  book_url: "https://www.amazon.com/"
+  repo_url: "https://github.com/lukaselsrode/projects/tree/main/total_behavioural_tracker"
