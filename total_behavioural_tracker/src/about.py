@@ -8,7 +8,8 @@ from kivy.uix.label import Label
 creditor_url = "https://www.linkedin.com/in/michael-lenok-4919b659/"
 theory_url = "https://en.wikipedia.org/wiki/Glasser's_choice_theory"
 book_url = "https://www.amazon.com/"
-repo_url = ("https://github.com/lukaselsrode/projects/tree/main/total_behavioural_tracker")
+repo_url = "https://github.com/lukaselsrode/projects/tree/main/total_behavioural_tracker"
+tip_url = "https://buy.stripe.com/aEUcN71qN6Pv9Dq6oo"
 
 
 def hyperlink_fmt(text, link):
@@ -61,7 +62,7 @@ class About(App):
         urlopen(repo_url)
 
     def open_tip_jar(self, instance):
-        print("Opening Tip Jar...")
+        urlopen(tip_url)
 
     def exit_app(self, instance):
         self.stop()
