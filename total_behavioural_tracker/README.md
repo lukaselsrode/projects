@@ -1,5 +1,8 @@
 
 
+DEBUG: 
+	- debug the b.s that's been happening since I included the pop-up []
+
 Prettify:
 	general: 
 		- Pick a font and standardize it across the app []

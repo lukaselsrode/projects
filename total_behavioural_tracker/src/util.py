@@ -107,7 +107,6 @@ def get_formatted_df():
     df = df[ys]
     return df
 
-
 def set_plot_options(df:pd.DataFrame) -> None:
     sns.set_theme(context='notebook',style='darkgrid',palette='muted')
     df.plot(style=['ms-', 'go-', 'y^-', 'bs-', 'rs-'])
