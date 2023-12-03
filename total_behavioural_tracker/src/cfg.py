@@ -6,20 +6,23 @@ from kivy.uix.popup import Popup
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
-from util import update_var_key_data,load_variable_data
+from util import update_var_key_data,load_variable_data,load_cfg
 
-GRID_LAYOUT = 1,10,5 # General Grid layout cfg
-# CFG for the labels at the top of the view to show what you're configuring 
-VAR_NAME_CFG = 40,'yellow'
-VAR_EX_CFG = 28,'white'
-# Button configurations
-BTN_HEIGHT = 80
-BTN_FONT_SIZE=30
-ACCEPT_COLOR,LOAD_CFG_COLOR='green','blue'
-# Text Input configuration
-INPUT_FONT_SIZE=18
-# Pop-up configuration
-POPUP_SIZE = (400,200)
+CFG = load_cfg()['cfg']
+
+GRID_LAYOUT = CFG['layout']
+TEXT = CFG['text']
+BUTTONS = CFG['buttons']
+
+VAR_NAME_CFG = TEXT['var']
+VAR_EX_CFG = TEXT['explanation']
+
+BTN_HEIGHT = BUTTONS['height']
+BTN_FONT_SIZE=BUTTONS['font_size']
+ACCEPT_COLOR,LOAD_CFG_COLOR= BUTTONS['accept_color'],BUTTONS['load_color']
+
+INPUT_FONT_SIZE= CFG['input']['font_size']
+POPUP_SIZE = CFG['popup']['size']
 
 class ConfigureVarKeyView(GridLayout):
     def __init__(self,file,var,data,app, **kwargs):
@@ -33,11 +36,11 @@ class ConfigureVarKeyView(GridLayout):
         exit_button.bind(on_release=self.exit_app)
         exit_button_layout.add_widget(exit_button)
         self.add_widget(exit_button_layout, index=0)
-
+        
         self.config_label = Label(text=var,font_size=VAR_NAME_CFG[0],italic=True,color=VAR_NAME_CFG[1])
         self.add_widget(self.config_label)
 
-        self.config_explanation = Label(text=data['ex'], font_size=VAR_EX_CFG[0],italic=True,color=VAR_EX_CFG[1])
+        self.config_explanation = Label(text=data['ex'], font_size=VAR_EX_CFG[0],italic=True,color=VAR_EX_CFG[1],valign='middle',halign='center')
         self.add_widget(self.config_explanation)
 
         self.config_input = TextInput(hint_text="Click 'Load' for current config or examples", multiline=True,font_size=INPUT_FONT_SIZE)
@@ -45,10 +48,10 @@ class ConfigureVarKeyView(GridLayout):
 
         self.button_layout = GridLayout(cols=2, row_force_default=True, row_default_height=BTN_HEIGHT) # UMMMM wha
         
-        self.reset_button = Button(text="Load",font_size=BTN_FONT_SIZE,background_color=LOAD_CFG_COLOR)
+        self.reset_button = Button(text="Load",font_size=BTN_FONT_SIZE,background_color=LOAD_CFG_COLOR,italic=True)
         self.reset_button.bind(on_press=self.reset_default),self.button_layout.add_widget(self.reset_button)
 
-        self.accept_button = Button(text="Accept",font_size=BTN_FONT_SIZE,background_color=ACCEPT_COLOR)
+        self.accept_button = Button(text="Accept",font_size=BTN_FONT_SIZE,background_color=ACCEPT_COLOR,italic=True)
         self.accept_button.bind(on_press=self.accept_input),self.button_layout.add_widget(self.accept_button)
 
         self.add_widget(self.button_layout)
@@ -64,8 +67,8 @@ class ConfigureVarKeyView(GridLayout):
         box = BoxLayout(orientation='vertical', padding=(10))
         msg = Label(text=f"Set {self.var} variable configuration \n for your {self.file.rstrip('.yaml')} ?")
         btn_layout = BoxLayout(size_hint_y=None, height=30, spacing=10)
-        yes_btn = Button(text='Yes', on_release=self.write_new_config)
-        no_btn = Button(text='No', on_release=self.cancel_popup)
+        yes_btn = Button(text='Yes', on_release=self.write_new_config,italic=True)
+        no_btn = Button(text='No', on_release=self.cancel_popup,italic=True)
         btn_layout.add_widget(yes_btn)
         btn_layout.add_widget(no_btn)
         box.add_widget(msg)
@@ -78,15 +81,17 @@ class ConfigureVarKeyView(GridLayout):
 
     def cancel_popup(self,instance):
         self.popup.dismiss()
+        self.app.next_screen()
     
-    def write_new_config(self,instance):
+    def write_new_config(self):
         update_var_key_data(self.file,self.var,self.user_input_keys)
-        self.popup.dismiss()
+        if self.popup: self.popup.dismiss()
         self.app.next_screen()
         
     def accept_input(self, instance):
         self.user_input_keys= list(filter(lambda x: x != '',''.join(list(map(lambda x:x.lower(),self.config_input.text))).split('\n')))
-        self.write_new_config() if not self.data['user'] else self.confirm_new_config() 
+        if not self.user_input_keys or self.user_input_keys == self.data['user']: self.app.next_screen() # catching empty input do nothing
+        self.write_new_config() if not self.data['user'] else self.confirm_new_config()
 
 class ConfigureApplication(App):
     def __init__(self,var_file, **kwargs):

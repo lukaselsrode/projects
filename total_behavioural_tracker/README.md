@@ -1,7 +1,13 @@
-Formating: 
-	- Need to port everything into the config file to make shit easier to standardize []
-	- OHHHH DON'T worry wayyy more to come once I get perfectionistic with this []
 
+
+Prettify:
+	general: 
+		- Pick a font and standardize it across the app []
+	Page: 
+		image: 
+			- Move the legend box to bottom left, and the leggend-box should be wayy smaller []
+			- save image to a set-size []
+	
 Features:
 	- Daily Notification []
 

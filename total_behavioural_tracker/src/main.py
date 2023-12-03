@@ -12,38 +12,46 @@ from about import About
 from cfg import ConfigureApplication
 from measure import ProgramMeasurementApp
 # This is for the pop-up to ask if you want to overwrite existing data if the data already exists for todays measurement
-from util import new_entry_valid, overwrite_last_entry
+from util import new_entry_valid, overwrite_last_entry,load_cfg
 
-# THIS IS THE APPLICATION CONFIG
-DEFAULT_USER_CFG_PATH = './config/user_data/'
-DEFAULT_PROGRAM_VAR_DIR = f'{DEFAULT_USER_CFG_PATH}public'
-DEFAULT_IMG = f'{DEFAULT_USER_CFG_PATH}graph.png'
-# FOR THE APPLICATION TITLE
-TITLE_SIZE_HINT = (0.2,0.2)
-TITLE_FONT_SIZE = 45
-TITLE_COLOR = 'blue'
-# MAIN BUTTON CFG
-MAIN_BUTTON_LAYOUT_SIZE = (1, 0.2)
-MAIN_BUTTON_SIZE = (0.25, 1)
-MAIN_BUTTON_FONT_SIZE = 30
-CFG_BUTTON_COLOR, MEASURE_BUTTON_COLOR = 'yellow','green'
-# VARIABLE CFG BUTTON
-CFG_VAR_SIZE_HINT_Y = None
-CFG_VAR_HEIGHT = 60
-CFG_VAR_FONT_SIZE = 18
-CFG_VAR_BUTTON_COLOR = 'orange'
-# ABOUT BUTTON
-ABT_SIZE_HINT = (0.05, 1)
-ABT_BUTTON_COLOR = 'cyan'
-# POP UP 
-POPUP_SIZE = (400,200)
+CFG = load_cfg()
+MCFG = CFG['main']
+PATHS = CFG['paths']
+BUTTONS = MCFG['buttons']
+DROPDOWN = MCFG['dropdown']
+ABOUT = MCFG['about']
+POPUP = MCFG['popup']
+TITLE = MCFG['title']
+
+DEFAULT_USER_CFG_PATH = PATHS['cfg_root']
+DEFAULT_PROGRAM_VAR_DIR = PATHS['vars_dir']
+DEFAULT_IMG = PATHS['img']
+
+TITLE_SIZE_HINT = TITLE['size']
+TITLE_FONT_SIZE = TITLE['font_size']
+TITLE_COLOR = TITLE['color']
+
+MAIN_BUTTON_LAYOUT_SIZE = BUTTONS['layout_size']
+MAIN_BUTTON_SIZE = BUTTONS['size']
+MAIN_BUTTON_FONT_SIZE = BUTTONS['font_size']
+CFG_BUTTON_COLOR, MEASURE_BUTTON_COLOR = BUTTONS['cfg_color'], BUTTONS['measure_color']
+
+CFG_VAR_HEIGHT = DROPDOWN['height']
+CFG_VAR_FONT_SIZE = DROPDOWN['font_size']
+CFG_VAR_BUTTON_COLOR = DROPDOWN['color']
+
+ABT_SIZE_HINT = ABOUT['size']
+ABT_BUTTON_COLOR = ABOUT['color']
+
+POPUP_SIZE = POPUP['size']
 
 class VariableButton(Button):
     def __init__(self,app, **kwargs):
         super(VariableButton, self).__init__(**kwargs)
-        self.size_hint_y, self.height = CFG_VAR_SIZE_HINT_Y, CFG_VAR_HEIGHT
+        self.size_hint_y, self.height = None, CFG_VAR_HEIGHT
         self.font_size=CFG_VAR_FONT_SIZE
         self.background_color = CFG_VAR_BUTTON_COLOR
+        self.italic=True
         self.app=app
         self.bind(on_release=self.configure_variable)
 
@@ -62,6 +70,7 @@ class VarsDropDown(DropDown):
 class MainButton(Button):
     def __init__(self, **kwargs):
         super(MainButton, self).__init__(**kwargs)
+        self.italic=True
         self.size_hint = MAIN_BUTTON_SIZE
         self.font_size= MAIN_BUTTON_FONT_SIZE
         
@@ -79,7 +88,7 @@ class MainButtonLayout(BoxLayout):
         self.orientation = 'horizontal'
         self.size_hint = MAIN_BUTTON_LAYOUT_SIZE
         # About button
-        self.about_button = Button(text='About', size_hint=ABT_SIZE_HINT,background_color=ABT_BUTTON_COLOR)
+        self.about_button = Button(text='About', size_hint=ABT_SIZE_HINT,background_color=ABT_BUTTON_COLOR,italic=True)
         self.about_button.bind(on_release=self.get_about_page)
         self.add_widget(self.about_button)
         # config options

@@ -3,17 +3,22 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.anchorlayout import AnchorLayout
-from util import will_power, pos_reinforcement,neg_reinforcement,obsession, normalize_as_pct,store_measurement
-# View Layout
-PAGE_LAYOUT = 1,3
-# Question
-QUESTION_FONT_SIZE = 40
-QUESTION_SIZE_HINT_Y = 0.5 
-# Buttons
-BTN_FONT_SIZE = 30
-BTN_SIZE_HINT=(0.5,0.25)   
-SPACE_BTWEEN_BTNS = 50     
-NO_COLOR,YES_COLOR = 'orange','green'
+from util import will_power, pos_reinforcement,neg_reinforcement,obsession, normalize_as_pct,store_measurement,load_cfg
+
+
+CFG = load_cfg()['measure']
+
+PAGE_LAYOUT =CFG['layout']
+QUESTION = CFG['question']
+BUTTONS=CFG['buttons']
+
+QUESTION_FONT_SIZE = QUESTION['font_size']
+QUESTION_SIZE_HINT_Y = QUESTION['size_y'] 
+
+BTN_FONT_SIZE = BUTTONS['font_size']
+BTN_SIZE_HINT=BUTTONS['size']
+SPACE_BTWEEN_BTNS =BUTTONS['space']     
+NO_COLOR,YES_COLOR = BUTTONS['no_color'], BUTTONS['yes_color']
 
 class QuestionView(GridLayout):
     def __init__(self,app,**kwargs):
@@ -21,26 +26,23 @@ class QuestionView(GridLayout):
         self.app = app
         self.var = self.app.vars[self.app.var_index]
         self.question = self.var.questions[self.app.q_index]
-        self.cols,self.rows= PAGE_LAYOUT # More rows for better distribution of space
-        # Create an anchor layout for the exit button
+        self.cols,self.rows= PAGE_LAYOUT 
         exit_button_layout = AnchorLayout(anchor_x='right', anchor_y='top', size_hint=(1, 0.1))
         exit_button = Button(text='Back', size_hint=(0.1, 1),background_color='red')
         exit_button.bind(on_release=self.exit_app)
         exit_button_layout.add_widget(exit_button)
         self.add_widget(exit_button_layout, index=0)
-        # Adding a centered question
-        self.question_label = Label(text=self.question, font_size=QUESTION_FONT_SIZE, halign='center', valign='middle', size_hint_y=QUESTION_SIZE_HINT_Y)
+        self.question_label = Label(text=self.question, font_size=QUESTION_FONT_SIZE, halign='center', valign='middle', size_hint_y=QUESTION_SIZE_HINT_Y,color='yellow',italic=True)
         self.question_label.bind(size=self.question_label.setter('text_size'))
         self.add_widget(self.question_label)
-        # GridLayout for buttons
         self.button_layout = GridLayout(cols=2,spacing=SPACE_BTWEEN_BTNS, size_hint_y=0.5)
         self.button_layout.bind(minimum_height=self.button_layout.setter('height'))
         # NO button
-        self.no_button = Button(text='No', font_size=BTN_FONT_SIZE, background_color=NO_COLOR,size_hint=BTN_SIZE_HINT)
+        self.no_button = Button(text='No', font_size=BTN_FONT_SIZE, background_color=NO_COLOR,size_hint=BTN_SIZE_HINT,italic=True)
         self.no_button.bind(on_release=self.on_no)
         self.button_layout.add_widget(self.no_button)
         # YES button
-        self.yes_button = Button(text='Yes', font_size=BTN_FONT_SIZE, background_color=YES_COLOR,size_hint=BTN_SIZE_HINT)
+        self.yes_button = Button(text='Yes', font_size=BTN_FONT_SIZE, background_color=YES_COLOR,size_hint=BTN_SIZE_HINT,italic=True)
         self.yes_button.bind(on_release=self.on_yes)
         self.button_layout.add_widget(self.yes_button)
         # Adding a wrapper layout to center the button layout
