@@ -6,6 +6,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
+from classes import ExitButton
 from util import update_var_key_data,load_variable_data,load_cfg
 
 CFG = load_cfg()['cfg']
@@ -30,12 +31,9 @@ class ConfigureVarKeyView(GridLayout):
         
         self.app,self.var,self.data,self.file = app,var,data,file # init params
         self.cols, self.padding, self.spacing = GRID_LAYOUT
-        # Create an anchor layout for the exit button
-        exit_button_layout = AnchorLayout(anchor_x='right', anchor_y='top', size_hint=(1, 0.1))
-        exit_button = Button(text='Back', size_hint=(0.1, 1),background_color='red')
-        exit_button.bind(on_release=self.exit_app)
-        exit_button_layout.add_widget(exit_button)
-        self.add_widget(exit_button_layout, index=0)
+        # create the exit button 
+        self.exit = ExitButton(self.app)
+        self.add_widget(self.exit.layout, index=0)
         
         self.config_label = Label(text=var,font_size=VAR_NAME_CFG[0],italic=True,color=VAR_NAME_CFG[1])
         self.add_widget(self.config_label)
@@ -83,15 +81,15 @@ class ConfigureVarKeyView(GridLayout):
         self.popup.dismiss()
         self.app.next_screen()
     
-    def write_new_config(self):
+    def write_new_config(self,instance):
         update_var_key_data(self.file,self.var,self.user_input_keys)
         if self.popup: self.popup.dismiss()
         self.app.next_screen()
-        
+    # DEBUG:: 
     def accept_input(self, instance):
         self.user_input_keys= list(filter(lambda x: x != '',''.join(list(map(lambda x:x.lower(),self.config_input.text))).split('\n')))
-        if not self.user_input_keys or self.user_input_keys == self.data['user']: self.app.next_screen() # catching empty input do nothing
-        self.write_new_config() if not self.data['user'] else self.confirm_new_config()
+        if not self.user_input_keys and not self.data['user']: self.user_input_keys = self.data['default']
+        self.confirm_new_config()
 
 class ConfigureApplication(App):
     def __init__(self,var_file, **kwargs):

@@ -4,6 +4,22 @@ paths:
   img: 'config/user_data/graph.png'  
   vars_dir: 'config/user_data/public/'
   
+classes:
+  title:
+    color: 'yellow'
+    size: [0.2,0.2]
+    font_size: 40
+  txt:
+    font_size: 28
+    color: 'white'
+  exit:
+    lsize: [1,0.1]
+    bsize: [0.1,1]
+    bcolor: 'red'
+  pop-up:
+
+
+
 main:
   title:
     size: [0.2, 0.2]
