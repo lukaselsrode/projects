@@ -2,11 +2,10 @@ from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.popup import Popup
-from kivy.uix.anchorlayout import AnchorLayout
+#from kivy.uix.popup import Popup
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
-from classes import ExitButton
+from classes import ExitButton,PageTitle,PopPrompt
 from util import update_var_key_data,load_variable_data,load_cfg
 
 CFG = load_cfg()['cfg']
@@ -35,10 +34,10 @@ class ConfigureVarKeyView(GridLayout):
         self.exit = ExitButton(self.app)
         self.add_widget(self.exit.layout, index=0)
         
-        self.config_label = Label(text=var,font_size=VAR_NAME_CFG[0],italic=True,color=VAR_NAME_CFG[1])
+        self.config_label = PageTitle(text=var)
         self.add_widget(self.config_label)
-
         self.config_explanation = Label(text=data['ex'], font_size=VAR_EX_CFG[0],italic=True,color=VAR_EX_CFG[1],valign='middle',halign='center')
+        #self.config_explanation = TextBlurb(text=data['ex'],text_size=(None,None))
         self.add_widget(self.config_explanation)
 
         self.config_input = TextInput(hint_text="Click 'Load' for current config or examples", multiline=True,font_size=INPUT_FONT_SIZE)
@@ -54,28 +53,12 @@ class ConfigureVarKeyView(GridLayout):
 
         self.add_widget(self.button_layout)
 
-    def exit_app(self, instance):
-        self.app.stop()
-
     def reset_default(self, instance):
         display_txt = self.data['default'] if not self.data['user'] else self.data['user']
         self.config_input.text = '\n'.join(list(map(lambda x : x.lower(),display_txt)))
     
     def confirm_new_config(self):
-        box = BoxLayout(orientation='vertical', padding=(10))
-        msg = Label(text=f"Set {self.var} variable configuration \n for your {self.file.rstrip('.yaml')} ?")
-        btn_layout = BoxLayout(size_hint_y=None, height=30, spacing=10)
-        yes_btn = Button(text='Yes', on_release=self.write_new_config,italic=True)
-        no_btn = Button(text='No', on_release=self.cancel_popup,italic=True)
-        btn_layout.add_widget(yes_btn)
-        btn_layout.add_widget(no_btn)
-        box.add_widget(msg)
-        box.add_widget(btn_layout)
-        self.popup = Popup(title=f'{self.var} confirmation', content=box,
-                           size_hint=(None, None), size=POPUP_SIZE,
-                           auto_dismiss=False)
-        self.popup.open()
-        return
+        self.popup = PopPrompt(f"Set {self.var} variable configuration \n for your {self.file.rstrip('.yaml')} ?",self.write_new_config,self.cancel_popup)
 
     def cancel_popup(self,instance):
         self.popup.dismiss()

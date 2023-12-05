@@ -2,7 +2,7 @@ from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.uix.anchorlayout import AnchorLayout
+from classes import ExitButton
 from util import will_power, pos_reinforcement,neg_reinforcement,obsession, normalize_as_pct,store_measurement,load_cfg
 
 
@@ -26,12 +26,11 @@ class QuestionView(GridLayout):
         self.app = app
         self.var = self.app.vars[self.app.var_index]
         self.question = self.var.questions[self.app.q_index]
-        self.cols,self.rows= PAGE_LAYOUT 
-        exit_button_layout = AnchorLayout(anchor_x='right', anchor_y='top', size_hint=(1, 0.1))
-        exit_button = Button(text='Back', size_hint=(0.1, 1),background_color='red')
-        exit_button.bind(on_release=self.exit_app)
-        exit_button_layout.add_widget(exit_button)
-        self.add_widget(exit_button_layout, index=0)
+        self.cols,self.rows= PAGE_LAYOUT
+        
+        self.exit = ExitButton(self.app)
+        self.add_widget(self.exit.layout, index=0)
+        
         self.question_label = Label(text=self.question, font_size=QUESTION_FONT_SIZE, halign='center', valign='middle', size_hint_y=QUESTION_SIZE_HINT_Y,color='yellow',italic=True)
         self.question_label.bind(size=self.question_label.setter('text_size'))
         self.add_widget(self.question_label)
@@ -59,9 +58,6 @@ class QuestionView(GridLayout):
     def on_no(self, instance):
         print(f'NO on {self.question}')
         self.app.next_screen()
-        
-    def exit_app(self, instance):
-        self.app.stop()
 
 class VarMeasurer():
     def __init__(self,questions):

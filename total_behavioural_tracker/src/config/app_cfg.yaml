@@ -16,7 +16,11 @@ classes:
     lsize: [1,0.1]
     bsize: [0.1,1]
     bcolor: 'red'
-  pop-up:
+  popup:
+    padding: [10]
+    height: 30
+    space: 10 
+    size: [400,200]
 
 
 
@@ -87,5 +91,5 @@ about:
     size: [1, 0.25]
     spacing: 10
     font_size: 40
-    support_color: 'green'
-    contribute_color: 'cyan'
+    support_color: 'yellow'
+    contribute_color: 'green'

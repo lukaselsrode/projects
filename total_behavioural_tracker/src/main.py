@@ -1,5 +1,4 @@
 import os
-import kivy
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -7,6 +6,7 @@ from kivy.uix.image import Image
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
 from kivy.uix.popup import Popup
+from classes import PageTitle
 # these are the other modules for the different views
 from about import About
 from cfg import ConfigureApplication
@@ -152,7 +152,7 @@ class MainPageLayout(BoxLayout):
         super(MainPageLayout, self).__init__(**kwargs)
         self.app=app
         self.orientation = 'vertical'
-        self.app_title = Label(text='Total Behavioral Tracker',color=TITLE_COLOR,pos_hint={'x':0.4,'y':0},size_hint=TITLE_SIZE_HINT,font_size=TITLE_FONT_SIZE,italic=True)
+        self.app_title = PageTitle(text='Total Behavioral Tracker',color=TITLE_COLOR)
         self.linegraph, self.main_buttons = MainLineGraph(), MainButtonLayout(self.app)
         self.add_widget(self.app_title)
         self.add_widget(self.linegraph)

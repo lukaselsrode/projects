@@ -5,6 +5,7 @@ from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from classes import PageTitle,ExitButton
 
 CFG = load_cfg()['about']
 URLS = CFG['urls']
@@ -47,15 +48,9 @@ class HyperlinkLabel(Label):
 class About(App):
     def build(self):
         layout = BoxLayout(orientation="vertical")
-        # Exit button
-        exit_button_layout = AnchorLayout(anchor_x="right", anchor_y="top", size_hint=(1, 0.1))
-        exit_button = Button(text="Back", size_hint=(0.1, 1), background_color="red")
-        exit_button.bind(on_release=self.exit_app)
-        exit_button_layout.add_widget(exit_button)
-        layout.add_widget(exit_button_layout, index=0)
-        # Title
-        title_label = Label(text="About The Total Behavioral Tracker App", size_hint=TITLE_SIZE_HINT,italic=True,color='yellow',pos_hint={'x':0.5,'y':0},font_size=TITLE_FONT_SIZE)
-        # Credit Blurb
+        exit=ExitButton(self)
+        layout.add_widget(exit.layout, index=0)
+        title_label = PageTitle(text="About The Total Behavioral Tracker App")
         credit_txt = HyperlinkLabel(text=f"""Credit goes to {hyperlink_fmt('Micheal Lenok',creditor_url)} an Addiction and Mental Health Counselor at the Sylvia Brafman Mental Health Center, for his work creating the 'program equation' based on {hyperlink_fmt("Glasser's work on 'choice theory'",theory_url)} combined with his own personal and professional experience detailed fully in his recent book {hyperlink_fmt("<BOOK HERE>",book_url)}""")
         # Buttons
         button_layout = BoxLayout(size_hint_y=None, size_hint=BUTTONS_SIZE_HINT, spacing=BUTTONS_SPACING)

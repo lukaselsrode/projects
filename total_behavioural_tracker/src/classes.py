@@ -16,7 +16,8 @@ from kivy.uix.button import Button
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.gridlayout import GridLayout
+from kivy.uix.popup import Popup
+from kivy.uix.boxlayout import BoxLayout
 from util import load_cfg
 
 
@@ -24,9 +25,8 @@ CFG = load_cfg()['classes']
 
 # Title Label
 TITLE=CFG['title']
-TXT=CFG['txt']
 EXIT = CFG['exit']
-
+POPUP=CFG['popup']
 
 # Page title 
 class PageTitle(Label):
@@ -38,15 +38,7 @@ class PageTitle(Label):
         self.color = TITLE['color']
         self.font_size = TITLE['font_size']
 
-# Text Blurb
-class TextBlurb(Label):
-    def __init__(self, **kwargs):
-        super(TextBlurb, self).__init__(**kwargs)
-        self.halign,self.valign = 'center','middle'
-        self.text_size = self.width, None
-        self.font_size = TXT['font_size']
-        self.color = TXT['color']
-
+# Exit button for pages -- THIS IS GOOOOD
 class ExitButton(Button):
     def __init__(self,application, **kwargs):
         super(ExitButton, self).__init__(**kwargs)
@@ -60,31 +52,25 @@ class ExitButton(Button):
         self.app.stop()
 
 
+# Yes No Prompt 
+class PopPrompt(Button):
+    def __init__(self, prompt, yfunc,nfunc,**kwargs):
+        super(PopPrompt, self).__init__(**kwargs)
+        self.layout = BoxLayout(orientation='vertical', padding=POPUP['padding'])
+        self.msg = Label(text=prompt)
+        self.btn_layout = BoxLayout(size_hint_y=None, height=POPUP['height'], spacing=POPUP['space'])
+        yes_btn = Button(text='Yes', on_release=yfunc,italic=True)
+        no_btn = Button(text='No', on_release=nfunc,italic=True)
+        self.btn_layout.add_widget(yes_btn)
+        self.btn_layout.add_widget(no_btn)
+        self.layout.add_widget(self.msg)
+        self.layout.add_widget(self.btn_layout)
+        self.popup = Popup(content=self.layout,
+                            size_hint=(None, None), size=POPUP['size'],
+                            auto_dismiss=False)
+        self.popup.open() 
+    
+    def dismiss(self):
+        self.popup.dismiss()
 
-"""
 
-# Pop-up button
-box = BoxLayout(orientation='vertical', padding=(10))
-msg = Label(text=f"Set {self.var} variable configuration \n for your {self.file.rstrip('.yaml')} ?")
-btn_layout = BoxLayout(size_hint_y=None, height=30, spacing=10)
-yes_btn = Button(text='Yes', on_release=self.write_new_config,italic=True)
-no_btn = Button(text='No', on_release=self.cancel_popup,italic=True)
-btn_layout.add_widget(yes_btn)
-btn_layout.add_widget(no_btn)
-box.add_widget(msg)
-box.add_widget(btn_layout)
-self.popup = Popup(title=f'{self.var} confirmation', content=box,
-                    size_hint=(None, None), size=POPUP_SIZE,
-                    auto_dismiss=False)
-self.popup.open() 
-
-
-
-# Two button layout 
-self.button_layout = GridLayout(cols=2, row_force_default=True, row_default_height=BTN_HEIGHT) # UMMMM wha
-self.reset_button = Button(text="Load",font_size=BTN_FONT_SIZE,background_color=LOAD_CFG_COLOR,italic=True)
-self.reset_button.bind(on_press=self.reset_default),self.button_layout.add_widget(self.reset_button)
-self.accept_button = Button(text="Accept",font_size=BTN_FONT_SIZE,background_color=ACCEPT_COLOR,italic=True)
-self.accept_button.bind(on_press=self.accept_input),self.button_layout.add_widget(self.accept_button)
-
-"""
