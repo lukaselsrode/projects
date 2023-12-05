@@ -39,6 +39,7 @@ FEATURES:
 	- Highlight Data with cursor [] 
 
 TESTING: 
+	- write some functions in util.py that setup starting data and img files for the application to pull in from []
 	- Security Testing []
 		- this must be automated somewhere []	
 
