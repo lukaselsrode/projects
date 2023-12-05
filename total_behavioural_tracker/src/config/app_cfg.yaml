@@ -57,7 +57,17 @@ cfg:
     font_size: 20
 
 util:
-  axes_font_size: 13
+  plot:
+    legend:
+      font_size: 8
+      loc: 'lower right'
+    warning:
+      font_size: 10
+      opacity: 0.3
+      color: 'red'
+    axes:
+      tick_font_size: 9
+      font_size: 14
 
 measure:
   layout: [1, 3]

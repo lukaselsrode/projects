@@ -18,7 +18,8 @@ PATHS = CFG['paths']
 DAT_FILE = PATHS['data']
 IMG_FILE = PATHS['img']
 VARS_DIR = PATHS['vars_dir']
-AXES_FONT_SIZE=CFG['util']['axes_font_size']
+
+PLOT = CFG['util']['plot']
 
 
 def reset_user_configs():
@@ -108,17 +109,22 @@ def get_formatted_df():
     return df
 
 def set_plot_options(df:pd.DataFrame) -> None:
+    WARN=PLOT['warning']
+    LEG=PLOT['legend']
+    AXES=PLOT['axes']
     sns.set_theme(context='notebook',style='darkgrid',palette='muted')
     df.plot(style=['ms-', 'go-', 'y^-', 'bs-', 'rs-'])
-    plt.legend(loc='lower right')
-    plt.axhspan(ymin=0, ymax=25, color='red', alpha=0.4)
-    plt.text(x=df.index[round(len(df.index) / 2)], y=15, s='Relapse Danger Zone', fontsize=12, va='center', ha='center')
-    plt.xlabel('Time', fontsize=AXES_FONT_SIZE)
-    plt.ylabel('Total % Value', fontsize=AXES_FONT_SIZE)
+    plt.legend(loc=LEG['loc'],fontsize=LEG['font_size'])
+    plt.axhspan(ymin=0, ymax=25, color=WARN['color'], alpha=WARN['opacity'])
+    plt.text(x=df.index[round(len(df.index) / 2)], y=15, s='Relapse Danger Zone', fontsize=WARN['font_size'], va='center', ha='center')
+    plt.xlabel('Time', fontsize=AXES['font_size'])
+    plt.ylabel('Total % Value', fontsize=AXES['font_size'])
+    # Set the fontsize for the tick labels
+    ax = plt.gca()
+    ax.tick_params(axis='x', labelsize=AXES['tick_font_size'])  
+    ax.tick_params(axis='y', labelsize=AXES['tick_font_size']) 
     plt.savefig(IMG_FILE)
-
 
 def store_daily_visualization()->None:
     df=get_formatted_df()
     set_plot_options(df),plt.savefig(IMG_FILE)
-    
