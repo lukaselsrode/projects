@@ -13,7 +13,7 @@ classes:
     font_size: 28
     color: 'white'
   exit:
-    lsize: [1,0.1]
+    lsize: [1,0.2]
     bsize: [0.1,1]
     bcolor: 'red'
   popup:
@@ -21,14 +21,19 @@ classes:
     height: 30
     space: 10 
     size: [400,200]
+  2butn:
+    layout:
+      orientation: 'horizontal'
+      size: [1,1]
+      spacing: 10
 
-
+    button:
+      size: [0.5,0.8]
+      font_size: 40
+      rcolor: 'green'
+      lcolor: 'yellow'
 
 main:
-  title:
-    size: [0.2, 0.2]
-    font_size: 60
-    color: 'blue'
   buttons:
     layout_size: [1, 0.2]
     size: [0.25, 1]
@@ -42,23 +47,14 @@ main:
   about:
     size: [0.05, 1]
     color: 'cyan'
-  popup:
-    size: [400, 200]
 
 cfg:
   layout: [1, 10, 5]
   text:
-    var: [40, 'yellow']
-    explanation: [28, 'white']
-  buttons:
-    height: 80
-    font_size: 40
-    accept_color: 'green'
-    load_color: 'yellow'
+    explanation: 
+      font_size: 28
   input:
     font_size: 20
-  popup:
-    size: [400, 200]
 
 util:
   axes_font_size: 13
@@ -68,12 +64,6 @@ measure:
   question:
     font_size: 40
     size_y: 0.5
-  buttons:
-    font_size: 40
-    size: [0.5, 0.25]
-    space: 10
-    no_color: 'yellow'
-    yes_color: 'green'
 
 about:
   urls:
@@ -82,14 +72,5 @@ about:
     book: "https://www.amazon.com/"
     repo: "https://github.com/lukaselsrode/projects/tree/main/total_behavioural_tracker"
     tip: "https://buy.stripe.com/aEUcN71qN6Pv9Dq6oo"
-  title:
-    size: [0.1, 0.1]
-    font_size: 40
   description:
     font_size: 28
-  buttons:
-    size: [1, 0.25]
-    spacing: 10
-    font_size: 40
-    support_color: 'yellow'
-    contribute_color: 'green'

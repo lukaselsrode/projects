@@ -1,30 +1,8 @@
-
-
-DEBUG: 
-	- debug the b.s that's been happening since I included the pop-up []
-
---------------------------
-PSEUDO 
-
-cfg: 
-	- user:
-	- example:
-
--------------------------
-
-CLEANCODE: 
-	
-	- generalize the stop(),start() in main.py []
-	- Generalize to OOP in some files []
-		- buttons []
-		- titles [x]
+CLEANCODE: 	
+	- Generalize to OOP in some files [ALMOST DONE...]
 		- text blurbs []
-		- general sutff:
-			- back button [x]
-			- pop-ups [x]
-		- NEED TO IMPLEMENT IN FILES FML []
-
-	- remove the use of shell comands, keep it in pandas [] 
+			-> some of the text doesn't wrap like in the config and main view but it does in the about and measure view ? 
+	- remove the use of shell comands []
 
 FORMATTING:
 	general: 
@@ -33,9 +11,9 @@ FORMATTING:
 		image: 
 			- Move the legend box to bottom left, and the leggend-box should be wayy smaller []
 			- save image to a set-size []
-	
 Features:
 	- Daily Notification []
+
 
 Deployment Testing: 
 	- Security Testing []
@@ -44,10 +22,13 @@ Deployment Testing:
 	- IOS []
 	- Android []
 
+
 From Micheal: 
 	- About Page blurb properly explaining the equation []
 	- Ref for book []
 
+
 Submission:
 	- GooglePlay []
 	- AppleStore []
+`
