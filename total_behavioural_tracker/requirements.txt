@@ -1,0 +1,5 @@
+kivy==2.2.1
+matplotlib==3.6.3
+pandas==1.5.3
+PyYAML==6.0.1
+seaborn==0.13.0
