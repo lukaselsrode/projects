@@ -107,6 +107,7 @@ class MainButtonLayout(BoxLayout):
         self.app.close()
         Measure = ProgramMeasurementApp()
         Measure.run()
+        self.linegraph=MainLineGraph()
         self.app.run()
 
     def confirm_overwrite(self):

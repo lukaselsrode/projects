@@ -11,10 +11,10 @@
 
 
 CLEANCODE: 	
-	- Need to update main.py so the image in the view is automatically updated after a measurement []
 	- Generalize to OOP in some files [ALMOST DONE...]
 		- text blurbs []
 			-> some of the text doesn't wrap like in the config and main view but it does in the about and measure view ? 
+	- if create graph.png on boot up []
 	- remove the use of shell comands []
 
 FORMATTING:
