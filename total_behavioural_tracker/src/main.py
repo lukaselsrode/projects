@@ -8,7 +8,7 @@ from classes import PageTitle, PopPrompt
 from about import About
 from cfg import ConfigureApplication
 from measure import ProgramMeasurementApp
-from util import new_entry_valid, overwrite_last_entry, load_cfg
+from util import new_entry_valid, overwrite_last_entry, load_cfg,store_daily_visualization
 
 CFG = load_cfg()
 MCFG = CFG["main"]
@@ -112,6 +112,7 @@ class MainButtonLayout(BoxLayout):
 
     def confirm_overwrite(self):
         self.popup = PopPrompt(
+            title='Confirm Measurement Overwrite',
             prompt="You have already measured your program today.\n Do you want to re-measure it?",
             yfunc=self.on_confirm,
             nfunc=self.on_cancel,
@@ -139,6 +140,8 @@ class MainPageLayout(BoxLayout):
 
 
 class MainApp(App):
+    store_daily_visualization() # make sure the vizualization changes are visible
+    
     def close(self):
         self.root.clear_widgets()
         self.stop()

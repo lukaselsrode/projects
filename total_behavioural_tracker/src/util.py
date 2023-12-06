@@ -2,7 +2,6 @@ import time
 import yaml
 import csv
 import pandas as pd
-from subprocess import getoutput as get 
 from matplotlib import pyplot as plt
 import seaborn as sns
 
@@ -55,10 +54,11 @@ def store_measurement(data:list[int]) -> None:
 def get_date() -> str:
     return "-".join([str(i) for i in time.localtime()[:3]])
 
-# function to check if the day is valid
-# TODO: use pandas for this bullshit
 def new_entry_valid()-> bool:
-    return False if str(get(f"tail -n 1 {DAT_FILE} | cut -d ',' -f 1")) == get_date() else True
+    df = get_formatted_df()
+    l_row = df.index[-1]
+    last_entry_today = str(l_row).split()[0] == str(pd.to_datetime(get_date())).split()[0]
+    return False if last_entry_today else True
 
 # function to earase todays measurment
 def overwrite_last_entry() -> None:

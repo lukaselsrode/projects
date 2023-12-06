@@ -42,7 +42,7 @@ class ExitButton(Button):
 
 
 class PopPrompt(Button):
-    def __init__(self, prompt, yfunc, nfunc, **kwargs):
+    def __init__(self,title, prompt, yfunc, nfunc, **kwargs):
         super(PopPrompt, self).__init__(**kwargs)
         self.layout = BoxLayout(orientation="vertical", padding=POPUP["padding"])
         self.msg = Label(text=prompt)
@@ -56,6 +56,7 @@ class PopPrompt(Button):
         self.layout.add_widget(self.msg)
         self.layout.add_widget(self.btn_layout)
         self.popup = Popup(
+            title=title,
             content=self.layout,
             size_hint=(None, None),
             size=POPUP["size"],

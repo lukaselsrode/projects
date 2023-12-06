@@ -56,19 +56,20 @@ class ConfigureVarKeyView(GridLayout):
 
     def confirm_new_config(self):
         self.popup = PopPrompt(
-            prompt=f"Set {self.var} variable configuration for your {self.file.rstrip('.yaml')}?",
+            title=f"Confirm {self.var} configuration",
+            prompt=f"Confirm {self.var} configuration for your {self.file.rstrip('.yaml')}?",
             yfunc=self.write_new_config,
             nfunc=self.cancel_popup,
         )
 
     def cancel_popup(self, instance):
-        self.popup.dismiss()
-        self.app.next_screen()
+        if self.popup: self.popup.dismiss()
 
     def write_new_config(self, instance):
         update_var_key_data(self.file, self.var, self.user_input_keys)
         self.popup.dismiss()
         self.app.next_screen()
+        
 
     def accept_input(self, instance):
         self.user_input_keys = [x.lower() for x in self.config_input.text.split("\n") if x]
