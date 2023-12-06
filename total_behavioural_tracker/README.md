@@ -3,12 +3,10 @@ Github:
 - setup public permissions []
 - Public ReadMe []
 
-FEATURES:
-        - Daily Notification []
 
 TESTING: 
         - write some functions in util.py that setup starting data and img files for the application to pull in from []
-        - Security Testing []
+	- Security Testing []
                 - this must be automated somewhere []
 
         - Build & Deployement: 
