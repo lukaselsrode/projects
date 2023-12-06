@@ -7,14 +7,14 @@ new repository as I get back into the job-market.
 
 ## Project Overview
 
-### Gamedev - [COMPLETED]
-VideoGames are how I originally got into computers. I did not use any game-engines and wrote everything from source. 
+### Game Development - [COMPLETED]
+Video Games are how I originally got into computers. I did not use any game-engines and wrote everything from source. 
 
-### Total Behavioural Tracker - [IN-PROGRESS]
-A mobile application built in Kivy to track your personalized 'daily program', a qualitative measurementof your cuttent emotional and spiritual fitness based on personalized values, activites, goals, and motivators. The application also accounts for underlying mental-health conditions and potential substance abuse issues.  
+### Total Behavioral Tracker - [IN-PROGRESS]
+A mobile application built in Kivy to track your personalized 'daily program', a qualitative measurement of your current emotional and spiritual fitness based on personalized values, activities, goals, and motivators. The application also accounts for underlying mental-health conditions and potential substance abuse issues.  
 
 ### Fintech - [DEPRECATED/OLD]
-My backround is in DevOps in the fintech sector. I was writing a few test libraries to hookup to my RobinHood account to their API. 
+My background is in DevOps in the fin-tech sector. I was writing a few test libraries to hookup to my RobinHood account to their API. 
 I haven't worked on this project in over a year, so don't get mad if most of this is deprecated. 
 
 ### Sys-Admin
