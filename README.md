@@ -7,12 +7,18 @@ new repository as I get back into the job-market.
 
 ## Project Overview
 
-### Fintech
+### Gamedev - [COMPLETED]
+VideoGames are how I originally got into computers. I did not use any game-engines and wrote everything from source. 
+
+### Total Behavioural Tracker - [IN-PROGRESS]
+A mobile application built in Kivy to track your personalized 'daily program', a qualitative measurementof your cuttent emotional and spiritual fitness based on personalized values, activites, goals, and motivators. The application also accounts for underlying mental-health conditions and potential substance abuse issues.  
+
+### Fintech - [DEPRECATED/OLD]
 My backround is in DevOps in the fintech sector. I was writing a few test libraries to hookup to my RobinHood account to their API. 
 I haven't worked on this project in over a year, so don't get mad if most of this is deprecated. 
 
-### Gamedev
-VideoGames are how I originally got into computers. I did not use any game-engines and wrote everything from source. 
+### Sys-Admin
+Some Shell Scripts I run on my personal machine to keep everything up-to-date and orderly. Getting rid of repetitive work is the reason why I got into programming. 
 
 ### Infosec
 Intellectual curiosity killed the cat, so naturally I like red-teaming systems. Mostly learning material. A few custom networking utilities. 
@@ -20,11 +26,6 @@ Intellectual curiosity killed the cat, so naturally I like red-teaming systems. 
 ### Misc
 Some scripts that don't fit into any of my projects that I've found helpful to keep on-hand.
 
-### Total Behavioural Tracker
-A mobile application built in Kivy to track your personalized 'daily program', a qualitative measurementof your cuttent emotional and spiritual fitness based on personalized values, activites, goals, and motivators. The application also accounts for underlying mental-health conditions and potential substance abuse issues.  
-
-### Sys-Admin
-Some Shell Scripts I run on my personal machine to keep everything up-to-date and orderly. Getting rid of repetitive work is the reason why I got into programming. 
 
 ### Up-Skilling
 self education materials, the moment you stop growing is the moment you start dying.  
