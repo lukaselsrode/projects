@@ -132,7 +132,7 @@ class MainPageLayout(BoxLayout):
         super(MainPageLayout, self).__init__(**kwargs)
         self.app = app
         self.orientation = "vertical"
-        self.app_title = PageTitle(text="Total Behavioral Tracker")
+        self.app_title = PageTitle(text="Total Behavioural Tracker")
         self.linegraph, self.main_buttons = MainLineGraph(), MainButtonLayout(self.app)
         self.add_widget(self.app_title)
         self.add_widget(self.linegraph)
