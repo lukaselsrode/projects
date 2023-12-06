@@ -20,9 +20,8 @@ Intellectual curiosity killed the cat, so naturally I like red-teaming systems. 
 ### Misc
 Some scripts that don't fit into any of my projects that I've found helpful to keep on-hand.
 
-### Recovery
-I've been clean since June 13th 2023, a program I wrote while in treatment to track my general spiritual fitness, to quantify and track the relative strength of my recovery program. 
-I have plans to turn this into a MobileApp using the Kivy package; at some point.
+### Total Behavioural Tracker
+A mobile application built in Kivy to track your personalized 'daily program', a qualitative measurementof your cuttent emotional and spiritual fitness based on personalized values, activites, goals, and motivators. The application also accounts for underlying mental-health conditions and potential substance abuse issues.  
 
 ### Sys-Admin
 Some Shell Scripts I run on my personal machine to keep everything up-to-date and orderly. Getting rid of repetitive work is the reason why I got into programming. 

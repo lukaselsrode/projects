@@ -56,6 +56,7 @@ def get_date() -> str:
     return "-".join([str(i) for i in time.localtime()[:3]])
 
 # function to check if the day is valid
+# TODO: use pandas for this bullshit
 def new_entry_valid()-> bool:
     return False if str(get(f"tail -n 1 {DAT_FILE} | cut -d ',' -f 1")) == get_date() else True
 
