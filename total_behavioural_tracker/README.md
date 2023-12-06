@@ -10,10 +10,7 @@ TESTING:
                 - this must be automated somewhere []
 
         - Build & Deployement: 
-                - IOS: 
-                        - fuck my life I need to find somewhere I can use Xcode... []
-                - Android:
-                        - buildozer build scripts and shit, easy money []
+		https://www.youtube.com/watch?v=pzsvN3fuBA0
 
 From Micheal: 
         - About Page blurb properly explaining the equation []
