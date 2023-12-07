@@ -63,13 +63,13 @@ class Road(object):
         self.game_rules,self.assets=Settings(),[]
         self.last_spawn=self.last_lvl=0
 ```
-The Game class takes the game world objects in the Road class and user input in the KeyListner object and uses it to advance the game. While a traditional application is static, waiting for an input or request to update/return, a game needs to update/return regardless of an input or request. In effect the application needs to update/return even on void inputs. 
 ##### Game
 ```python
 class Game(object):
     def __init__(self):
         self.Keys,self.Road = KeyListner(),Road()
 ```
+The Game class takes the game world objects in the Road class and user input in the KeyListner object and uses it to advance the game. While a traditional application is static, waiting for an input or request to update/return, a game needs to update/return regardless of an input or request. In effect the application needs to update/return even on void inputs. 
 ##### Player
 The player class is the car which the user has control over. The ASCII representation of the player needs to be taken into account as when the car jumps lanes, approaching objects need to be shifted accordingly to the assets size. 
 ```python
