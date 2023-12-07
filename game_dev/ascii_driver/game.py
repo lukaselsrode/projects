@@ -235,7 +235,6 @@ class Road(object):
 
     def create_asset_lane(self, assets: list[object]) -> str:
         lane = ""
-        # TODO: Make this method a little cleaner/more readable
         for i, a in enumerate(assets):
             if i == 0:
                 if (
