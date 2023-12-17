@@ -9,18 +9,7 @@ Addiction:
   - meth
   - shopping
   ex: Addictions that you have to a substance, behavior, or event
-  user:
-  - sex
-  - cocaine
-  - alcohol
-  - nicotine
-  - risk
-  - speed
-  - weed
-  - beating the system
-  - work
-  - love
-  - power
+  user: []
 Mental:
   default:
   - ADHD
@@ -29,7 +18,4 @@ Mental:
   - Social Anxiety
   - Depression
   ex: Mental health conditions that contribute to acting out on 'bad behavior'
-  user:
-  - adhd
-  - ied
-  - bipolar 2
+  user: []

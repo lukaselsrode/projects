@@ -1,5 +1,4 @@
 import os
-import argparse
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -50,7 +49,6 @@ class MainButton(Button):
         self.size_hint = BUTTONS["size"]
         self.font_size = BUTTONS["font_size"]
 
-
 class MainLineGraph(Image):
     def __init__(self, **kwargs):
         super(MainLineGraph, self).__init__(**kwargs)
@@ -96,9 +94,7 @@ class MainButtonLayout(BoxLayout):
     def show_cfg_wheel(self, instance):
         vars = list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"])))
         dropdown = VarsDropDown(self.app, vars)
-        dropdown.bind(
-            on_select=lambda instance, x: setattr(self.configure_button, "text", x)
-        )
+        dropdown.bind(on_select=lambda instance, x: setattr(self.configure_button, "text", x))
         dropdown.open(self.configure_button)
 
     def measure_prgrm(self, instance):
@@ -108,6 +104,7 @@ class MainButtonLayout(BoxLayout):
         self.app.close()
         Measure = ProgramMeasurementApp()
         Measure.run()
+        store_daily_visualization()
         self.linegraph=MainLineGraph()
         self.app.run()
 
@@ -141,7 +138,7 @@ class MainPageLayout(BoxLayout):
 
 
 class MainApp(App):
-    store_daily_visualization() # make sure the vizualization changes are visible
+    store_daily_visualization() 
     
     def close(self):
         self.root.clear_widgets()

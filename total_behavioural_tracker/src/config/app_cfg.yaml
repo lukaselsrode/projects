@@ -1,7 +1,7 @@
 paths:
   cfg_root: 'config/user_data/'  
   data: 'config/user_data/data.csv'  
-  img: 'config/user_data/graph.png'  
+  img: 'config/user_data/graph.png'
   vars_dir: 'config/user_data/public/'
   
 classes:
@@ -66,9 +66,9 @@ util:
   plot:
     legend:
       font_size: 8
-      loc: 'lower right'
+      loc: 'lower left'
     warning:
-      font_size: 10
+      font_size: 8
       opacity: 0.3
       color: 'red'
     axes:

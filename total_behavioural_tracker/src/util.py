@@ -20,14 +20,6 @@ VARS_DIR = PATHS['vars_dir']
 
 PLOT = CFG['util']['plot']
 
-
-def reset_user_configs():
-    return
-
-def reset_user_files():
-    return
-
-
 # a function to load the yaml files where the users terms are configured
 def load_variable_data(varname)->dict:
     # load the data from the file
@@ -43,19 +35,19 @@ def update_var_key_data(var_name:str, key:str, new_data:list[str])->None:
     with open(cfg_file, 'w') as f:
         yaml.dump(data, f, default_flow_style=False)
 
-# function to write data to csv file 
 def store_measurement(data:list[int]) -> None:
-    with open(DAT_FILE, 'a') as f:
+    with open(DAT_FILE, 'a+', newline='') as f:
+        if f.read(1) != '\n': f.write('\n')
         writer = csv.writer(f)
         writer.writerow([get_date()] + data)
-    store_daily_visualization()
-    
+
 # function to get todays date
 def get_date() -> str:
     return "-".join([str(i) for i in time.localtime()[:3]])
-
+ 
 def new_entry_valid()-> bool:
     df = get_formatted_df()
+    if df.empty : return True
     l_row = df.index[-1]
     last_entry_today = str(l_row).split()[0] == str(pd.to_datetime(get_date())).split()[0]
     return False if last_entry_today else True
@@ -101,31 +93,42 @@ def pos_reinforcement()->float:
 def normalize_as_pct(val:float or int,min_val:float or int,val_range:float or int)->int:
     return round(100*((val - min_val)/val_range))
 
-def get_formatted_df():
-    df=pd.read_csv(DAT_FILE)
+def get_formatted_df() -> pd.DataFrame:
+    df = pd.read_csv(DAT_FILE)
     ys = [i for i in df.columns if i != 'date']
-    df.set_index('date')
-    df.index=pd.to_datetime(df.date,yearfirst=True)
-    df = df[ys]
+    df.set_index('date', inplace=True)
+    if not df.empty:    
+        df.index = pd.to_datetime(df.index, yearfirst=True)
+        df = df[ys]
+    else:
+        df = pd.DataFrame(columns=ys)
+        df.index = pd.to_datetime([]) 
     return df
 
-def set_plot_options(df:pd.DataFrame) -> None:
-    WARN=PLOT['warning']
-    LEG=PLOT['legend']
-    AXES=PLOT['axes']
-    sns.set_theme(context='notebook',style='darkgrid',palette='muted')
-    df.plot(style=['ms-', 'go-', 'y^-', 'bs-', 'rs-'])
-    plt.legend(loc=LEG['loc'],fontsize=LEG['font_size'])
-    plt.axhspan(ymin=0, ymax=25, color=WARN['color'], alpha=WARN['opacity'])
-    plt.text(x=df.index[round(len(df.index) / 2)], y=15, s='Relapse Danger Zone', fontsize=WARN['font_size'], va='center', ha='center')
+def get_date_midpoint(df):
+    df_index = df.index
+    min_date,max_date = min(df_index),max(df_index)
+    return min_date + (max_date - min_date) / 2
+
+def set_plot_options(df: pd.DataFrame) -> None:
+    WARN = PLOT['warning']
+    LEG = PLOT['legend']
+    AXES = PLOT['axes']
+    sns.set_theme(context='notebook', style='darkgrid', palette='muted')
+    if not df.empty:       
+        df.plot(style=['ms-', 'go-', 'y^-', 'bs-', 'rs-'])
+        plt.text(x=get_date_midpoint(df), y=15, s='Relapse Danger Zone', fontsize=WARN['font_size'], va='center', ha='center')
+        plt.axhspan(ymin=0, ymax=25, color=WARN['color'], alpha=WARN['opacity'])
+        plt.legend(loc=LEG['loc'], fontsize=LEG['font_size'])
     plt.xlabel('Time', fontsize=AXES['font_size'])
     plt.ylabel('Total % Value', fontsize=AXES['font_size'])
-    # Set the fontsize for the tick labels
+
     ax = plt.gca()
     ax.tick_params(axis='x', labelsize=AXES['tick_font_size'])  
-    ax.tick_params(axis='y', labelsize=AXES['tick_font_size']) 
-    plt.savefig(IMG_FILE)
+    ax.tick_params(axis='y', labelsize=AXES['tick_font_size'])
+
 
 def store_daily_visualization()->None:
     df=get_formatted_df()
-    set_plot_options(df),plt.savefig(IMG_FILE)
+    set_plot_options(df)
+    plt.savefig(IMG_FILE)

@@ -6,11 +6,9 @@ from classes import ExitButton, PageTitle, PopPrompt, TwoButtonLayout
 from util import update_var_key_data, load_variable_data,load_cfg
 
 
-
 CFG = load_cfg()["cfg"]
 GRID_LAYOUT = CFG["layout"]
 TEXT = CFG["text"]
-
 
 
 class ConfigureVarKeyView(GridLayout):
@@ -57,7 +55,7 @@ class ConfigureVarKeyView(GridLayout):
     def confirm_new_config(self):
         self.popup = PopPrompt(
             title=f"Confirm {self.var} configuration",
-            prompt=f"Confirm {self.var} configuration for your {self.file.rstrip('.yaml')}?",
+            prompt=f"Confirm {self.var} configuration  \n for your {self.file.rstrip('.yaml')}?",
             yfunc=self.write_new_config,
             nfunc=self.cancel_popup,
         )
