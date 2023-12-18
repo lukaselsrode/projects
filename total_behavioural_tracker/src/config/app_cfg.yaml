@@ -24,8 +24,8 @@ classes:
     padding: [10]
     height: 30
     space: 10 
-    size: [400,200]
-  
+    size: [500,500]
+
   2butn:
 
     layout:

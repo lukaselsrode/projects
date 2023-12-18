@@ -8,7 +8,7 @@ from classes import PageTitle, PopPrompt
 from about import About
 from cfg import ConfigureApplication
 from measure import ProgramMeasurementApp
-from util import new_entry_valid, overwrite_last_entry, load_cfg,store_daily_visualization
+from util import new_entry_valid, overwrite_last_entry, load_cfg,store_daily_visualization,unconfigured_vars
 
 CFG = load_cfg()
 MCFG = CFG["main"]
@@ -92,14 +92,24 @@ class MainButtonLayout(BoxLayout):
         self.app.run()
 
     def show_cfg_wheel(self, instance):
+        if self.popup: self.popup.dismiss()
         vars = list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"])))
         dropdown = VarsDropDown(self.app, vars)
         dropdown.bind(on_select=lambda instance, x: setattr(self.configure_button, "text", x))
         dropdown.open(self.configure_button)
 
     def measure_prgrm(self, instance):
-        self.start_measurement() if new_entry_valid() else self.confirm_overwrite()
-
+        fully_configured = not unconfigured_vars()
+        if new_entry_valid() and fully_configured: self.start_measurement()
+        elif not new_entry_valid() and fully_configured: self.confirm_overwrite()
+        else:
+            self.popup = PopPrompt(
+                title='Incomplete Program Configuration',
+                prompt=f"Complete Configuring?",
+                yfunc=self.show_cfg_wheel,
+                nfunc=self.on_cancel,
+            )
+        
     def start_measurement(self):
         self.app.close()
         Measure = ProgramMeasurementApp()

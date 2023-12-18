@@ -1,4 +1,5 @@
 import time
+import os
 import yaml
 import csv
 import pandas as pd
@@ -34,6 +35,14 @@ def update_var_key_data(var_name:str, key:str, new_data:list[str])->None:
     data[key]['user'] = new_data
     with open(cfg_file, 'w') as f:
         yaml.dump(data, f, default_flow_style=False)
+
+
+def unconfigured_vars():
+    vars,unconfigured = list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"]))),[]
+    for v in vars:
+        for v in load_variable_data(v).values():
+            if not v['user']: unconfigured.append(v)
+    return unconfigured
 
 def store_measurement(data:list[int]) -> None:
     with open(DAT_FILE, 'a+', newline='') as f:
@@ -105,10 +114,10 @@ def get_formatted_df() -> pd.DataFrame:
         df.index = pd.to_datetime([]) 
     return df
 
-def get_date_midpoint(df):
+def get_warn_index(df):
     df_index = df.index
     min_date,max_date = min(df_index),max(df_index)
-    return min_date + (max_date - min_date) / 2
+    return min_date + (max_date - min_date) / 3
 
 def set_plot_options(df: pd.DataFrame) -> None:
     WARN = PLOT['warning']
@@ -117,7 +126,7 @@ def set_plot_options(df: pd.DataFrame) -> None:
     sns.set_theme(context='notebook', style='darkgrid', palette='muted')
     if not df.empty:       
         df.plot(style=['ms-', 'go-', 'y^-', 'bs-', 'rs-'])
-        plt.text(x=get_date_midpoint(df), y=15, s='Relapse Danger Zone', fontsize=WARN['font_size'], va='center', ha='center')
+        plt.text(x=get_warn_index(df), y=15, s='Relapse Danger Zone', fontsize=WARN['font_size'], va='center', ha='center')
         plt.axhspan(ymin=0, ymax=25, color=WARN['color'], alpha=WARN['opacity'])
         plt.legend(loc=LEG['loc'], fontsize=LEG['font_size'])
     plt.xlabel('Time', fontsize=AXES['font_size'])
