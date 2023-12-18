@@ -117,7 +117,7 @@ def get_formatted_df() -> pd.DataFrame:
 def get_warn_index(df):
     df_index = df.index
     min_date,max_date = min(df_index),max(df_index)
-    return min_date + (max_date - min_date) / 3
+    return min_date + 2*(max_date - min_date) / 3
 
 def set_plot_options(df: pd.DataFrame) -> None:
     WARN = PLOT['warning']

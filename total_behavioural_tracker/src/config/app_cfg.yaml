@@ -1,8 +1,8 @@
 paths:
   cfg_root: 'config/user_data/'  
-  data: 'config/user_data/data.csv'  
-  img: 'config/user_data/graph.png'
-  vars_dir: 'config/user_data/public/'
+  data: 'config/user_data/my_data.csv'  
+  img: 'config/user_data/my_graph.png'
+  vars_dir: 'config/user_data/my_public/'
   
 classes:
   

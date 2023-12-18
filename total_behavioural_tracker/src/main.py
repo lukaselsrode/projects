@@ -92,7 +92,6 @@ class MainButtonLayout(BoxLayout):
         self.app.run()
 
     def show_cfg_wheel(self, instance):
-        if self.popup: self.popup.dismiss()
         vars = list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"])))
         dropdown = VarsDropDown(self.app, vars)
         dropdown.bind(on_select=lambda instance, x: setattr(self.configure_button, "text", x))
@@ -104,9 +103,9 @@ class MainButtonLayout(BoxLayout):
         elif not new_entry_valid() and fully_configured: self.confirm_overwrite()
         else:
             self.popup = PopPrompt(
-                title='Incomplete Program Configuration',
-                prompt=f"Complete Configuring?",
-                yfunc=self.show_cfg_wheel,
+                title='Incomplete Setup',
+                prompt=f"Complete Program Configuring?",
+                yfunc=self.on_cancel,
                 nfunc=self.on_cancel,
             )
         
