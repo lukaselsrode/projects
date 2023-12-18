@@ -3,12 +3,8 @@
 SUBMODULE CRAP:
         https://stackoverflow.com/questions/12898278/issue-with-adding-common-code-as-git-submodule-already-exists-in-the-index
 
-
 - setup public permissions []
 - Public ReadMe []
-
-STYLE: 
-	- Bullshit relapse waring should be like 75% of the way to the right instead of at 50%... []
 
 Builds: 
 	- General Build Tutorial: https://www.youtube.com/watch?v=pzsvN3fuBA0
