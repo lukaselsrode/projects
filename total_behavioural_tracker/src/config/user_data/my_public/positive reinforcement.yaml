@@ -1,0 +1,41 @@
+Daily:
+  default:
+  - Exercising
+  - Journaling
+  - Making Art
+  - Advancing Professionally
+  - Learning
+  ex: Daily activities you enjoy that contribute to your greater sense of purpose
+  user:
+  - exercising
+  - journaling
+  - creating
+  - advancing professionally
+  - learning
+  - communing with nature
+Fellowship:
+  default:
+  - NA
+  - Sports
+  - Tech/Engineering
+  - Volunteering
+  ex: Communities you enjoy being a part of that foster a greater sense of connection
+    and meaning
+  user:
+  - na
+  - sports
+  - tech/engineering
+  - volunteering
+Values:
+  default:
+  - Truth
+  - Courage
+  - Intelligence
+  - Openness
+  - Nature
+  ex: Your core values you want to live and stand by
+  user:
+  - truth
+  - courage
+  - innovation
+  - nature
