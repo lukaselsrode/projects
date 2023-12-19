@@ -1,17 +1,33 @@
 
 
-SUBMODULE CRAP:
-        https://stackoverflow.com/questions/12898278/issue-with-adding-common-code-as-git-submodule-already-exists-in-the-index
 
-- setup public permissions []
-- Public ReadMe []
+Graphics: 
+        - Need a graphic for the intro splash screen + the app-home screen [] 
+
+Updates to Source Code: 
+        - Fonts are default doo-doo at the moment []
+        - Pop-up kinda hacky []
+        - Notifications... if I have time before the 24th []
+
+
+Repository:
+        - setup public permissions []
+        - Public ReadMe []
 
 Builds: 
-	- General Build Tutorial: https://www.youtube.com/watch?v=pzsvN3fuBA0
-		-> idk if the IOS build is the same as the APK builds but the .spec file seems to indicate so. 
-		-> DEPENDACY BULLSHIT : https://buildozer.readthedocs.io/en/latest/installation.html
-	
+        IOS: [ON-HOLD]
+                -> MF !!! My build script finally works, now waiting for 2 days on Apple to confirm my dev account amazing...
+                -> XCode Build  []
+                -> XCode Simulator Tests []
+        Android: [WTF]
+                -> Building the APK: 
+                        -> Buildozer is shitting bricks... [Dependancies I don't know I'm thinking of just working this on my old linux machine]
+                        -> Might have to move to GitHub Actions... I love the dependency game... NOT!!! []
+                -> Testing:
+                        -> Emulator: https://appetize.io/ []
+                        -> Android Studio ? This might be a move : https://developer.android.com/studio []
 From Micheal:
+        - Need to update this MF totally ghosted him []
         - About Page blurb properly explaining the equation []
         - Ref for book []
 
