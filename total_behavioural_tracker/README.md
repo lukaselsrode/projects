@@ -1,6 +1,3 @@
-
-
-
 Graphics: 
         - Need a graphic for the intro splash screen + the app-home screen [] 
 
@@ -20,12 +17,8 @@ Builds:
                 -> XCode Build  []
                 -> XCode Simulator Tests []
         Android: [WTF]
-                -> Building the APK: 
-                        -> Buildozer is shitting bricks... [Dependancies I don't know I'm thinking of just working this on my old linux machine]
-                        -> Might have to move to GitHub Actions... I love the dependency game... NOT!!! []
-                -> Testing:
-                        -> Emulator: https://appetize.io/ []
-                        -> Android Studio ? This might be a move : https://developer.android.com/studio []
+                -> Emulator: https://appetize.io/ []
+                -> Android Studio ? This might be a move : https://developer.android.com/studio []
 From Micheal:
         - Need to update this MF totally ghosted him []
         - About Page blurb properly explaining the equation []

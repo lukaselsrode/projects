@@ -1,6 +1,6 @@
 [app]
 title = Total Behavioral Tracker
-package.name = TBTAndroid
+package.name = TBT
 package.domain = org.test
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,csv,yaml
@@ -13,7 +13,7 @@ osx.kivy_version = 2.2.1
 fullscreen = 0
 android.archs = arm64-v8a, armeabi-v7a
 android.allow_backup = True
-p4a.branch = stable
+p4a.branch = develop
 ios.kivy_ios_url = https://github.com/kivy/kivy-ios
 ios.kivy_ios_branch = master
 ios.ios_deploy_url = https://github.com/phonegap/ios-deploy
