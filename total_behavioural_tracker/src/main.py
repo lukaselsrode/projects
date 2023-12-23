@@ -17,20 +17,21 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.image import Image
 from kivy.uix.dropdown import DropDown
 
-def load_cfg()->dict:
-    with open('config/app_cfg.yaml','r') as f:
-        cfg = yaml.safe_load(f)
-    return cfg
 
-# Global configuration
-GlobalCFG = load_cfg()
-PATHS = GlobalCFG['paths']
+def load_yaml_file(file_path: str) -> dict:
+    with open(file_path, 'r') as file:
+        return yaml.safe_load(file)
+
+GlobalCFG = load_yaml_file('config/app_cfg.yaml')
+PATHS, PlotCFG, ClassesCFG, MeasureCFG, ConfigCFG, AboutCFG, MCFG = (
+    GlobalCFG['paths'], GlobalCFG['util']['plot'], GlobalCFG['classes'],
+    GlobalCFG['measure'], GlobalCFG['cfg'], GlobalCFG['about'], GlobalCFG['main']
+)
+
 DAT_FILE = PATHS['data']
 IMG_FILE = PATHS['img']
 VARS_DIR = PATHS['vars_dir']
 
-
-PlotCFG = GlobalCFG['util']['plot']
 
 def load_variable_data(varname)->dict:
     # load the data from the file
@@ -71,18 +72,17 @@ def new_entry_valid()-> bool:
     last_entry_today = str(l_row).split()[0] == str(pd.to_datetime(get_date())).split()[0]
     return False if last_entry_today else True
 
-# function to earase todays measurment
+
 def overwrite_last_entry() -> None:
     df = get_formatted_df()
     df = df.drop(df.index[-1])
     df.to_csv(DAT_FILE)
 
-# function to create a set of questions from lists in config
+
 def create_field_questions(prefix:str,entries:list,suffix:str)->list:
     if not suffix: suffix = '?'
     return list(map(lambda x: ' '.join([prefix,x,suffix]),entries))
 
-# function to create all the questions for any config file
 def mk_questions(cfg_file:str,prompts_cfg:list) -> list:
     file,q=load_variable_data(cfg_file),[]
     for pre,field,suf in prompts_cfg:q+=create_field_questions(pre,file[field]['user'],suf)
@@ -154,12 +154,11 @@ def store_daily_visualization()->None:
 
 
 
-ClassesCFG = GlobalCFG["classes"]
+
 TITLE = ClassesCFG["title"]
 EXIT = ClassesCFG["exit"]
 POPUP = ClassesCFG["popup"]
 BUTTONS = ClassesCFG["2butn"]
-
 
 class PageTitle(Label):
     def __init__(self, **kwargs):
@@ -243,7 +242,6 @@ class TwoButtonLayout(BoxLayout):
 
 
 
-MeasureCFG = GlobalCFG["measure"]
 PAGE_LAYOUT = MeasureCFG["layout"]
 QUESTION = MeasureCFG["question"]
 
@@ -339,7 +337,6 @@ class ProgramMeasurementApp(App):
         return self.current_question_view()
 
 
-ConfigCFG = GlobalCFG["cfg"]
 GRID_LAYOUT = ConfigCFG["layout"]
 TEXT = ConfigCFG["text"]
 
@@ -432,7 +429,6 @@ class ConfigureApplication(App):
             self.stop()
 
 
-AboutCFG = GlobalCFG["about"]
 URLS = AboutCFG["urls"]
 creditor_url = URLS["creditor"]
 theory_url = URLS["theory"]
@@ -489,8 +485,8 @@ def hyperlink_fmt(text, link):
 
 
 
-MCFG = GlobalCFG["main"]
-BUTTONS = MCFG["buttons"]
+
+MBUTTONS = MCFG["buttons"]
 DROPDOWN = MCFG["dropdown"]
 ABOUT = MCFG["about"]
 
@@ -523,8 +519,8 @@ class MainButton(Button):
     def __init__(self, **kwargs):
         super(MainButton, self).__init__(**kwargs)
         self.italic = True
-        self.size_hint = BUTTONS["size"]
-        self.font_size = BUTTONS["font_size"]
+        self.size_hint = MBUTTONS["size"]
+        self.font_size = MBUTTONS["font_size"]
 
 class MainLineGraph(Image):
     def __init__(self, **kwargs):
@@ -538,7 +534,7 @@ class MainButtonLayout(BoxLayout):
         super(MainButtonLayout, self).__init__(**kwargs)
         self.app = app
         self.orientation = "horizontal"
-        self.size_hint = BUTTONS["layout_size"]
+        self.size_hint = MBUTTONS["layout_size"]
 
         self.about_button = Button(
             text="About",
@@ -549,12 +545,12 @@ class MainButtonLayout(BoxLayout):
         self.about_button.bind(on_release=self.get_about_page)
 
         self.configure_button = MainButton(
-            text="Configure", background_color=BUTTONS["cfg_color"]
+            text="Configure", background_color=MBUTTONS["cfg_color"]
         )
         self.configure_button.bind(on_press=self.show_cfg_wheel)
 
         self.measure_button = MainButton(
-            text="Measure", background_color=BUTTONS['measure_color']
+            text="Measure", background_color=MBUTTONS['measure_color']
         )
         self.measure_button.bind(on_release=self.measure_prgrm)
 
