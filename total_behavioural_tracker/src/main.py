@@ -208,6 +208,15 @@ class PopPrompt(Button):
     def dismiss(self):
         self.popup.dismiss()
 
+class OneButtonPopup(Popup):
+    def __init__(self, title, message, **kwargs):
+        super().__init__(title=title, size_hint=(None, None), size=(400, 300), **kwargs)
+        self.content = BoxLayout(orientation='vertical')
+        self.message_label = Label(text=message)
+        self.close_button = Button(text="Close", size_hint=(1, 0.2))
+        self.close_button.bind(on_press=self.dismiss)
+        self.content.add_widget(self.message_label)
+        self.content.add_widget(self.close_button)
 
 class BigButton(Button):
     def __init__(self, txt, func, **kwargs):
@@ -295,7 +304,7 @@ class VarMeasurer:
         return normalize_as_pct(self.score / self.n, 0, 1)
 
 
-class ProgramMeasurementApp(App):
+class ProgramMeasurementApp(BaseApp):
     def __init__(self, **kwargs):
         super(ProgramMeasurementApp, self).__init__(**kwargs)
 
@@ -333,7 +342,7 @@ class ProgramMeasurementApp(App):
             self.clear_to_next_question()
             return
         self.process_questions()
-        self.stop()
+        self.close()
 
     def build(self):
         return self.current_question_view()
@@ -407,7 +416,7 @@ class ConfigureVarKeyView(GridLayout):
         self.confirm_new_config()
 
 
-class ConfigureApplication(App):
+class ConfigureApplication(BaseApp):
     def __init__(self, var_file, **kwargs):
         super(ConfigureApplication, self).__init__(**kwargs)
         self.file = var_file
@@ -424,12 +433,11 @@ class ConfigureApplication(App):
 
     def next_screen(self):
         self.current_var_index += 1
-        if self.current_var_index < len(self.vars_list):
-            self.root.clear_widgets()
-            self.root.add_widget(self.current_cfg_view())
-        else:
-            self.stop()
-
+        if not self.current_var_index < len(self.vars_list):
+            self.close()
+        self.root.clear_widgets()
+        self.root.add_widget(self.current_cfg_view())
+ 
 
 URLS = AboutCFG["urls"]
 creditor_url = URLS["creditor"]
@@ -453,7 +461,7 @@ class HyperlinkLabel(Label):
         urlopen(ref)
 
 
-class About(App):
+class About(BaseApp):
     def build(self):
         layout = BoxLayout(orientation="vertical")
         exit = ExitButton(self)
@@ -479,8 +487,6 @@ class About(App):
     def open_tip_jar(self, instance):
         urlopen(tip_url)
 
-    def exit_app(self, instance):
-        self.stop()
 
 def hyperlink_fmt(text, link):
     return f"[color=0000ff][ref={link}][i]{text}[/i][/ref][/color]"
@@ -576,12 +582,8 @@ class MainButtonLayout(BoxLayout):
         if new_entry_valid() and fully_configured: self.start_measurement()
         elif not new_entry_valid() and fully_configured: self.confirm_overwrite()
         else:
-            self.popup = PopPrompt(
-                title='Incomplete Setup',
-                prompt=f"Complete Program Configuring?",
-                yfunc=self.on_cancel,
-                nfunc=self.on_cancel,
-            )
+            popup = OneButtonPopup(title='Incomplete Setup', message="Complete Configuration")
+            popup.open()
         
     def start_measurement(self):
         self.app.close()
@@ -620,13 +622,8 @@ class MainPageLayout(BoxLayout):
         self.add_widget(self.main_buttons)
 
 
-class MainApp(App):
-    store_daily_visualization() 
-    
-    def close(self):
-        self.root.clear_widgets()
-        self.stop()
-
+class MainApp(BaseApp):
+    store_daily_visualization()
     def build(self):
         return MainPageLayout(self)
 
