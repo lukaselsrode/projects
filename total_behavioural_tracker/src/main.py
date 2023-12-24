@@ -47,7 +47,6 @@ def update_var_key_data(var_name:str, key:str, new_data:list)->None:
     with open(cfg_file, 'w') as f:
         yaml.dump(data, f, default_flow_style=False)
 
-
 def unconfigured_vars():
     vars,unconfigured = list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"]))),[]
     for v in vars:
@@ -61,7 +60,6 @@ def store_measurement(data:list) -> None:
         writer = csv.writer(f)
         writer.writerow([get_date()] + data)
 
-# function to get todays date
 def get_date() -> str:
     return "-".join([str(i) for i in time.localtime()[:3]])
  
@@ -72,12 +70,10 @@ def new_entry_valid()-> bool:
     last_entry_today = str(l_row).split()[0] == str(pd.to_datetime(get_date())).split()[0]
     return False if last_entry_today else True
 
-
 def overwrite_last_entry() -> None:
     df = get_formatted_df()
     df = df.drop(df.index[-1])
     df.to_csv(DAT_FILE)
-
 
 def create_field_questions(prefix:str,entries:list,suffix:str)->list:
     if not suffix: suffix = '?'
@@ -154,7 +150,6 @@ def store_daily_visualization()->None:
 
 
 
-
 TITLE = ClassesCFG["title"]
 EXIT = ClassesCFG["exit"]
 POPUP = ClassesCFG["popup"]
@@ -210,8 +205,8 @@ class PopPrompt(Button):
         )
         self.popup.open()
 
-def dismiss(self):
-    self.popup.dismiss()
+    def dismiss(self):
+        self.popup.dismiss()
 
 
 class BigButton(Button):
@@ -240,6 +235,13 @@ class TwoButtonLayout(BoxLayout):
         self.add_widget(self.right_button)
 
 
+class BaseApp(App):
+    def close(self):
+        self.root.clear_widgets()
+        self.stop()
+
+    def build(self):
+        raise NotImplementedError("Must be implemented by subclasses")
 
 
 PAGE_LAYOUT = MeasureCFG["layout"]
@@ -482,7 +484,6 @@ class About(App):
 
 def hyperlink_fmt(text, link):
     return f"[color=0000ff][ref={link}][i]{text}[/i][/ref][/color]"
-
 
 
 
