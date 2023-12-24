@@ -19,141 +19,191 @@ from kivy.uix.dropdown import DropDown
 
 
 def load_yaml_file(file_path: str) -> dict:
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         return yaml.safe_load(file)
 
-GlobalCFG = load_yaml_file('config/app_cfg.yaml')
+
+GlobalCFG = load_yaml_file("config/app_cfg.yaml")
 PATHS, PlotCFG, ClassesCFG, MeasureCFG, ConfigCFG, AboutCFG, MCFG = (
-    GlobalCFG['paths'], GlobalCFG['util']['plot'], GlobalCFG['classes'],
-    GlobalCFG['measure'], GlobalCFG['cfg'], GlobalCFG['about'], GlobalCFG['main']
+    GlobalCFG["paths"],
+    GlobalCFG["util"]["plot"],
+    GlobalCFG["classes"],
+    GlobalCFG["measure"],
+    GlobalCFG["cfg"],
+    GlobalCFG["about"],
+    GlobalCFG["main"],
 )
 
-DAT_FILE = PATHS['data']
-IMG_FILE = PATHS['img']
-VARS_DIR = PATHS['vars_dir']
+DAT_FILE = PATHS["data"]
+IMG_FILE = PATHS["img"]
+VARS_DIR = PATHS["vars_dir"]
 
 
-def load_variable_data(varname)->dict:
+def load_variable_data(varname) -> dict:
     # load the data from the file
-    with open(''.join([VARS_DIR,varname,'.yaml']),'r') as cfgfile:
+    with open("".join([VARS_DIR, varname, ".yaml"]), "r") as cfgfile:
         cfg = yaml.safe_load(cfgfile)
     return cfg
 
-def update_var_key_data(var_name:str, key:str, new_data:list)->None:
-    cfg_file = ''.join([VARS_DIR, var_name, '.yaml'])    
-    with open(cfg_file, 'r') as f:
+
+def update_var_key_data(var_name: str, key: str, new_data: list) -> None:
+    cfg_file = "".join([VARS_DIR, var_name, ".yaml"])
+    with open(cfg_file, "r") as f:
         data = yaml.safe_load(f)
-    data[key]['user'] = new_data
-    with open(cfg_file, 'w') as f:
+    data[key]["user"] = new_data
+    with open(cfg_file, "w") as f:
         yaml.dump(data, f, default_flow_style=False)
 
+
 def unconfigured_vars():
-    vars,unconfigured = list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"]))),[]
+    vars, unconfigured = (
+        list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"]))),
+        [],
+    )
     for v in vars:
         for v in load_variable_data(v).values():
-            if not v['user']: unconfigured.append(v)
+            if not v["user"]:
+                unconfigured.append(v)
     return unconfigured
 
-def store_measurement(data:list) -> None:
-    with open(DAT_FILE, 'a+', newline='') as f:
-        if f.read(1) != '\n': f.write('\n')
+
+def store_measurement(data: list) -> None:
+    with open(DAT_FILE, "a+", newline="") as f:
+        if f.read(1) != "\n":
+            f.write("\n")
         writer = csv.writer(f)
         writer.writerow([get_date()] + data)
 
+
 def get_date() -> str:
     return "-".join([str(i) for i in time.localtime()[:3]])
- 
-def new_entry_valid()-> bool:
+
+
+def new_entry_valid() -> bool:
     df = get_formatted_df()
-    if df.empty : return True
+    if df.empty:
+        return True
     l_row = df.index[-1]
-    last_entry_today = str(l_row).split()[0] == str(pd.to_datetime(get_date())).split()[0]
+    last_entry_today = (
+        str(l_row).split()[0] == str(pd.to_datetime(get_date())).split()[0]
+    )
     return False if last_entry_today else True
+
 
 def overwrite_last_entry() -> None:
     df = get_formatted_df()
     df = df.drop(df.index[-1])
     df.to_csv(DAT_FILE)
 
-def create_field_questions(prefix:str,entries:list,suffix:str)->list:
-    if not suffix: suffix = '?'
-    return list(map(lambda x: ' '.join([prefix,x,suffix]),entries))
 
-def mk_questions(cfg_file:str,prompts_cfg:list) -> list:
-    file,q=load_variable_data(cfg_file),[]
-    for pre,field,suf in prompts_cfg:q+=create_field_questions(pre,file[field]['user'],suf)
+def create_field_questions(prefix: str, entries: list, suffix: str) -> list:
+    if not suffix:
+        suffix = "?"
+    return list(map(lambda x: " ".join([prefix, x, suffix]), entries))
+
+
+def mk_questions(cfg_file: str, prompts_cfg: list) -> list:
+    file, q = load_variable_data(cfg_file), []
+    for pre, field, suf in prompts_cfg:
+        q += create_field_questions(pre, file[field]["user"], suf)
     return q
 
+
 def will_power() -> float:
-    return mk_questions('willpower',[('Do you want to','Desires',None)])
+    return mk_questions("willpower", [("Do you want to", "Desires", None)])
+
 
 def neg_reinforcement() -> float:
-    dq_args,dr_args=list(tuple(zip(['Are you']*3,['Restrictions','Boundaries','Accountability'],3*[None]))),[('Have you','Relapse',None)]
-    return mk_questions('negative reinforcement',dq_args+dr_args)
+    dq_args, dr_args = list(
+        tuple(
+            zip(
+                ["Are you"] * 3,
+                ["Restrictions", "Boundaries", "Accountability"],
+                3 * [None],
+            )
+        )
+    ), [("Have you", "Relapse", None)]
+    return mk_questions("negative reinforcement", dq_args + dr_args)
 
-def obsession()->float:
-    args=[
-        ('Did you forget to take your medication to manage','Mental',None),
-        ('Are you addicted to','Addiction',None)     
-    ]
-    return mk_questions('obsession',args)  
 
-def pos_reinforcement()->float:
+def obsession() -> float:
     args = [
-        ('Have you lived in accordance with','Values',None),
-        ('Have you done your daily','Daily',None),
-        ('Have you been a part of a','Fellowship','fellowship today?')]
-    return mk_questions('positive reinforcement',args)
+        ("Did you forget to take your medication to manage", "Mental", None),
+        ("Are you addicted to", "Addiction", None),
+    ]
+    return mk_questions("obsession", args)
 
-def normalize_as_pct(val:float or int,min_val:float or int,val_range:float or int)->int:
-    return round(100*((val - min_val)/val_range))
+
+def pos_reinforcement() -> float:
+    args = [
+        ("Have you lived in accordance with", "Values", None),
+        ("Have you done your daily", "Daily", None),
+        ("Have you been a part of a", "Fellowship", "fellowship today?"),
+    ]
+    return mk_questions("positive reinforcement", args)
+
+
+def normalize_as_pct(
+    val: float or int, min_val: float or int, val_range: float or int
+) -> int:
+    return round(100 * ((val - min_val) / val_range))
+
 
 def get_formatted_df() -> pd.DataFrame:
     df = pd.read_csv(DAT_FILE)
-    ys = [i for i in df.columns if i != 'date']
-    df.set_index('date', inplace=True)
-    if not df.empty:    
+    ys = [i for i in df.columns if i != "date"]
+    df.set_index("date", inplace=True)
+    if not df.empty:
         df.index = pd.to_datetime(df.index, yearfirst=True)
         df = df[ys]
     else:
         df = pd.DataFrame(columns=ys)
-        df.index = pd.to_datetime([]) 
+        df.index = pd.to_datetime([])
     return df
+
 
 def get_warn_index(df):
     df_index = df.index
-    min_date,max_date = min(df_index),max(df_index)
-    return min_date + 2*(max_date - min_date) / 3
+    min_date, max_date = min(df_index), max(df_index)
+    return min_date + 2 * (max_date - min_date) / 3
+
 
 def set_plot_options(df: pd.DataFrame) -> None:
-    WARN = PlotCFG['warning']
-    LEG = PlotCFG['legend']
-    AXES = PlotCFG['axes']
-    sns.set_theme(context='notebook', style='darkgrid', palette='muted')
-    if not df.empty:       
-        df.plot(style=['ms-', 'go-', 'y^-', 'bs-', 'rs-'])
-        plt.text(x=get_warn_index(df), y=15, s='Relapse Danger Zone', fontsize=WARN['font_size'], va='center', ha='center')
-        plt.axhspan(ymin=0, ymax=25, color=WARN['color'], alpha=WARN['opacity'])
-        plt.legend(loc=LEG['loc'], fontsize=LEG['font_size'])
-    plt.xlabel('Time', fontsize=AXES['font_size'])
-    plt.ylabel('Total % Value', fontsize=AXES['font_size'])
+    WARN = PlotCFG["warning"]
+    LEG = PlotCFG["legend"]
+    AXES = PlotCFG["axes"]
+    sns.set_theme(context="notebook", style="darkgrid", palette="muted")
+    if not df.empty:
+        df.plot(style=["ms-", "go-", "y^-", "bs-", "rs-"])
+        plt.text(
+            x=get_warn_index(df),
+            y=15,
+            s="Relapse Danger Zone",
+            fontsize=WARN["font_size"],
+            va="center",
+            ha="center",
+        )
+        plt.axhspan(ymin=0, ymax=25, color=WARN["color"], alpha=WARN["opacity"])
+        plt.legend(loc=LEG["loc"], fontsize=LEG["font_size"])
+    plt.xlabel("Time", fontsize=AXES["font_size"])
+    plt.ylabel("Total % Value", fontsize=AXES["font_size"])
 
     ax = plt.gca()
-    ax.tick_params(axis='x', labelsize=AXES['tick_font_size'])  
-    ax.tick_params(axis='y', labelsize=AXES['tick_font_size'])
+    ax.tick_params(axis="x", labelsize=AXES["tick_font_size"])
+    ax.tick_params(axis="y", labelsize=AXES["tick_font_size"])
 
 
-def store_daily_visualization()->None:
-    df=get_formatted_df()
+def store_daily_visualization() -> None:
+    df = get_formatted_df()
     set_plot_options(df)
     plt.savefig(IMG_FILE)
-
 
 
 TITLE = ClassesCFG["title"]
 EXIT = ClassesCFG["exit"]
 POPUP = ClassesCFG["popup"]
 BUTTONS = ClassesCFG["2butn"]
+
 
 class PageTitle(Label):
     def __init__(self, **kwargs):
@@ -183,7 +233,7 @@ class ExitButton(Button):
 
 
 class PopPrompt(Button):
-    def __init__(self,title, prompt, yfunc, nfunc, **kwargs):
+    def __init__(self, title, prompt, yfunc, nfunc, **kwargs):
         super(PopPrompt, self).__init__(**kwargs)
         self.layout = BoxLayout(orientation="vertical", padding=POPUP["padding"])
         self.msg = Label(text=prompt)
@@ -208,15 +258,17 @@ class PopPrompt(Button):
     def dismiss(self):
         self.popup.dismiss()
 
+
 class OneButtonPopup(Popup):
     def __init__(self, title, message, **kwargs):
         super().__init__(title=title, size_hint=(None, None), size=(400, 300), **kwargs)
-        self.content = BoxLayout(orientation='vertical')
+        self.content = BoxLayout(orientation="vertical")
         self.message_label = Label(text=message)
         self.close_button = Button(text="Close", size_hint=(1, 0.2))
         self.close_button.bind(on_press=self.dismiss)
         self.content.add_widget(self.message_label)
         self.content.add_widget(self.close_button)
+
 
 class BigButton(Button):
     def __init__(self, txt, func, **kwargs):
@@ -255,6 +307,7 @@ class BaseApp(App):
 
 PAGE_LAYOUT = MeasureCFG["layout"]
 QUESTION = MeasureCFG["question"]
+
 
 class QuestionView(GridLayout):
     def __init__(self, app, **kwargs):
@@ -351,6 +404,7 @@ class ProgramMeasurementApp(BaseApp):
 GRID_LAYOUT = ConfigCFG["layout"]
 TEXT = ConfigCFG["text"]
 
+
 class ConfigureVarKeyView(GridLayout):
     def __init__(self, file, var, data, app, **kwargs):
         super(ConfigureVarKeyView, self).__init__(**kwargs)
@@ -389,7 +443,9 @@ class ConfigureVarKeyView(GridLayout):
         self.add_widget(self.button_layout)
 
     def reset_default(self, instance):
-        display_txt = self.data["default"] if not self.data["user"] else self.data["user"]
+        display_txt = (
+            self.data["default"] if not self.data["user"] else self.data["user"]
+        )
         self.config_input.text = "\n".join(display_txt).lower()
 
     def confirm_new_config(self):
@@ -401,16 +457,18 @@ class ConfigureVarKeyView(GridLayout):
         )
 
     def cancel_popup(self, instance):
-        if self.popup: self.popup.dismiss()
+        if self.popup:
+            self.popup.dismiss()
 
     def write_new_config(self, instance):
         update_var_key_data(self.file, self.var, self.user_input_keys)
         self.popup.dismiss()
         self.app.next_screen()
-        
 
     def accept_input(self, instance):
-        self.user_input_keys = [x.lower() for x in self.config_input.text.split("\n") if x]
+        self.user_input_keys = [
+            x.lower() for x in self.config_input.text.split("\n") if x
+        ]
         if not self.user_input_keys and not self.data["user"]:
             self.user_input_keys = self.data["default"]
         self.confirm_new_config()
@@ -437,7 +495,7 @@ class ConfigureApplication(BaseApp):
             self.close()
         self.root.clear_widgets()
         self.root.add_widget(self.current_cfg_view())
- 
+
 
 URLS = AboutCFG["urls"]
 creditor_url = URLS["creditor"]
@@ -445,6 +503,7 @@ theory_url = URLS["theory"]
 book_url = URLS["book"]
 repo_url = URLS["repo"]
 tip_url = URLS["tip"]
+
 
 class HyperlinkLabel(Label):
     def __init__(self, **kwargs):
@@ -492,7 +551,6 @@ def hyperlink_fmt(text, link):
     return f"[color=0000ff][ref={link}][i]{text}[/i][/ref][/color]"
 
 
-
 MBUTTONS = MCFG["buttons"]
 DROPDOWN = MCFG["dropdown"]
 ABOUT = MCFG["about"]
@@ -529,6 +587,7 @@ class MainButton(Button):
         self.size_hint = MBUTTONS["size"]
         self.font_size = MBUTTONS["font_size"]
 
+
 class MainLineGraph(Image):
     def __init__(self, **kwargs):
         super(MainLineGraph, self).__init__(**kwargs)
@@ -557,7 +616,7 @@ class MainButtonLayout(BoxLayout):
         self.configure_button.bind(on_press=self.show_cfg_wheel)
 
         self.measure_button = MainButton(
-            text="Measure", background_color=MBUTTONS['measure_color']
+            text="Measure", background_color=MBUTTONS["measure_color"]
         )
         self.measure_button.bind(on_release=self.measure_prgrm)
 
@@ -574,28 +633,34 @@ class MainButtonLayout(BoxLayout):
     def show_cfg_wheel(self, instance):
         vars = list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"])))
         dropdown = VarsDropDown(self.app, vars)
-        dropdown.bind(on_select=lambda instance, x: setattr(self.configure_button, "text", x))
+        dropdown.bind(
+            on_select=lambda instance, x: setattr(self.configure_button, "text", x)
+        )
         dropdown.open(self.configure_button)
 
     def measure_prgrm(self, instance):
         fully_configured = not unconfigured_vars()
-        if new_entry_valid() and fully_configured: self.start_measurement()
-        elif not new_entry_valid() and fully_configured: self.confirm_overwrite()
+        if new_entry_valid() and fully_configured:
+            self.start_measurement()
+        elif not new_entry_valid() and fully_configured:
+            self.confirm_overwrite()
         else:
-            popup = OneButtonPopup(title='Incomplete Setup', message="Complete Configuration")
+            popup = OneButtonPopup(
+                title="Incomplete Setup", message="Complete Configuration"
+            )
             popup.open()
-        
+
     def start_measurement(self):
         self.app.close()
         Measure = ProgramMeasurementApp()
         Measure.run()
         store_daily_visualization()
-        self.linegraph=MainLineGraph()
+        self.linegraph = MainLineGraph()
         self.app.run()
 
     def confirm_overwrite(self):
         self.popup = PopPrompt(
-            title='Confirm Measurement Overwrite',
+            title="Confirm Measurement Overwrite",
             prompt="You have already measured your program today.\n Do you want to re-measure it?",
             yfunc=self.on_confirm,
             nfunc=self.on_cancel,
@@ -624,6 +689,7 @@ class MainPageLayout(BoxLayout):
 
 class MainApp(BaseApp):
     store_daily_visualization()
+
     def build(self):
         return MainPageLayout(self)
 
