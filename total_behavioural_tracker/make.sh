@@ -43,7 +43,7 @@ build_ios() {
     toolchain create "$project_name" ./src/
     toolchain update "$project_name-ios"
     cp src/config/app_logo.png "$project_name-ios"/icon.png
-    sudo chmod -R 777 "$project_name-ios"
+    chmod -R 777 "$project_name-ios"
     open "${project_name}-ios/${project_name}.xcodeproj" || { log "Failed to open Xcode project"; exit 1; }
 }
 

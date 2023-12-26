@@ -1,13 +1,15 @@
 import time
 import os
-import yaml
 import csv
 import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
+from pathlib import Path
 from webbrowser import open_new_tab as urlopen
 from kivy.app import App
 from kivy.uix.anchorlayout import AnchorLayout
+from kivy.storage.jsonstore import JsonStore
+from kivy.resources import resource_add_path,resource_find
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
@@ -18,12 +20,18 @@ from kivy.uix.image import Image
 from kivy.uix.dropdown import DropDown
 
 
-def load_yaml_file(file_path: str) -> dict:
-    with open(file_path, "r") as file:
-        return yaml.safe_load(file)
+resource_add_path(os.path.join(os.getcwd(), 'data'))
+def find_file(filename):
+    file = Path(resource_find(filename))
+    if not file.exists(): raise FileNotFoundError(f"Configuration file not found: {file}")
+    return file
 
+def create_store(filename):
+    return JsonStore(find_file(filename))
 
-GlobalCFG = load_yaml_file("config/app_cfg.yaml")
+GlobalCFG = create_store("app_cfg.json")
+ProgramCFG = create_store('program_cfg.json')
+
 PATHS, PlotCFG, ClassesCFG, MeasureCFG, ConfigCFG, AboutCFG, MCFG = (
     GlobalCFG["paths"],
     GlobalCFG["util"]["plot"],
@@ -34,30 +42,27 @@ PATHS, PlotCFG, ClassesCFG, MeasureCFG, ConfigCFG, AboutCFG, MCFG = (
     GlobalCFG["main"],
 )
 
-DAT_FILE = PATHS["data"]
-IMG_FILE = PATHS["img"]
-VARS_DIR = PATHS["vars_dir"]
-
+DAT_FILE = find_file("program_data.csv")
+IMG_FILE = find_file("program_graph.png")
 
 def load_variable_data(varname) -> dict:
-    # load the data from the file
-    with open("".join([VARS_DIR, varname, ".yaml"]), "r") as cfgfile:
-        cfg = yaml.safe_load(cfgfile)
-    return cfg
-
+    return ProgramCFG[varname]
 
 def update_var_key_data(var_name: str, key: str, new_data: list) -> None:
-    cfg_file = "".join([VARS_DIR, var_name, ".yaml"])
-    with open(cfg_file, "r") as f:
-        data = yaml.safe_load(f)
-    data[key]["user"] = new_data
-    with open(cfg_file, "w") as f:
-        yaml.dump(data, f, default_flow_style=False)
+    temp={}
+    for var in ProgramCFG['data'].keys():
+        temp[var] = ProgramCFG['data'][var]
+        if var == var_name:
+            temp[var][key]['user'] = new_data
+    ProgramCFG.store_put('data',temp)
+
+update_var_key_data('obsession','Addiction', ['Meth', 'Gambling', 'Heroine'])
+
 
 
 def unconfigured_vars():
     vars, unconfigured = (
-        list(map(lambda i: i.split(".")[0], os.listdir(PATHS["vars_dir"]))),
+        list(map(lambda i: i.split(".")[0], ProgramCFG.keys())),
         [],
     )
     for v in vars:
@@ -97,8 +102,7 @@ def overwrite_last_entry() -> None:
 
 
 def create_field_questions(prefix: str, entries: list, suffix: str) -> list:
-    if not suffix:
-        suffix = "?"
+    if not suffix: suffix = "?"
     return list(map(lambda x: " ".join([prefix, x, suffix]), entries))
 
 
@@ -696,3 +700,4 @@ class MainApp(BaseApp):
 
 if __name__ == "__main__":
     MainApp().run()
+
