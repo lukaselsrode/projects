@@ -6,7 +6,6 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.dropdown import DropDown
 from util import MCFG,IMG_FILE,ProgramCFG, unconfigured_vars,store_daily_visualization,new_entry_valid,overwrite_last_entry
 from classes import PageTitle,PopPrompt,BaseScreen,OneButtonPopup
-
 from cfg import ConfigureScreen
 from measure import ProgramMeasurementScreen
 from about import AboutScreen

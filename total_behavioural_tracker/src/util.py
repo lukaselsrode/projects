@@ -6,31 +6,37 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 from pathlib import Path
-from kivy.resources import resource_add_path,resource_find
+from kivy.resources import resource_add_path, resource_find
 
 
-resource_add_path(os.path.join(os.getcwd(), 'data'))
+resource_add_path(os.path.join(os.getcwd(), "data"))
+
+
 def find_file(filename):
     file = Path(resource_find(filename))
-    if not file.exists(): raise FileNotFoundError(f"Configuration file not found: {file}")
+    if not file.exists():
+        raise FileNotFoundError(f"Configuration file not found: {file}")
     return file
+
 
 def load_json(filename) -> dict:
     # TODO: GET this file from server
     return json.load(open(filename))
 
-def write_data(data,filename):
+
+def write_data(data, filename):
     # TODO: POST this file to server
-    json.dump(data,open(filename,'w'))
+    json.dump(data, open(filename, "w"))
 
 
+# THIS SHOULD ALL COME FROM THE **SERVER**
 DAT_FILE = find_file("program_data.csv")
 IMG_FILE = find_file("program_graph.png")
 PROGRAM_FILE = find_file("program_cfg.json")
 CFG_FILE = find_file("app_cfg.json")
-
-GlobalCFG = load_json(CFG_FILE)
 ProgramCFG = load_json(PROGRAM_FILE)
+# This might just need to be a python dictionary...
+GlobalCFG = load_json(CFG_FILE)
 
 PlotCFG, ClassesCFG, MeasureCFG, ConfigCFG, AboutCFG, MCFG = (
     GlobalCFG["util"]["plot"],
@@ -47,16 +53,17 @@ def load_variable_data(varname) -> dict:
 
 
 def update_var_key_data(var_name: str, key: str, new_data: list) -> None:
-    temp={}
+    temp = {}
     for var in ProgramCFG.keys():
         temp[var] = ProgramCFG[var]
         if var == var_name:
-            temp[var][key]['user'] = new_data
+            temp[var][key]["user"] = new_data
     write_data(temp, PROGRAM_FILE)
+
 
 def unconfigured_vars():
     vars, unconfigured = (
-        list(map(lambda i: i.split(".")[0], ProgramCFG.keys())),
+        list(ProgramCFG.keys()),
         [],
     )
     for v in vars:
@@ -96,7 +103,8 @@ def overwrite_last_entry() -> None:
 
 
 def create_field_questions(prefix: str, entries: list, suffix: str) -> list:
-    if not suffix: suffix = "?"
+    if not suffix:
+        suffix = "?"
     return list(map(lambda x: " ".join([prefix, x, suffix]), entries))
 
 
@@ -163,7 +171,7 @@ def get_formatted_df() -> pd.DataFrame:
 def get_warn_index(df):
     df_index = df.index
     min_date, max_date = min(df_index), max(df_index)
-    return min_date + (PlotCFG['offset_dist'] * (max_date - min_date))
+    return min_date + (PlotCFG["offset_dist"] * (max_date - min_date))
 
 
 def set_plot_options(df: pd.DataFrame) -> None:
