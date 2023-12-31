@@ -1,5 +1,5 @@
-Updates to Source Code: 
-        - Migrate my shitty Multi-App class to a screenmanger []
+Updates to Source Code:
+        - Why tf is the configscreen not getting the root-app passed to it ?? []
         - Migrate my shitty JSON calls to FireBase, isntead of figuring out the wierdness of IOS and Android R/W perms []
         - Fonts are default doo-doo at the moment []
         
