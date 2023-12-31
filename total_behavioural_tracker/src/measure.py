@@ -1,7 +1,7 @@
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from classes import TwoButtonLayout, ExitButton,BaseScreen
-from util import MeasureCFG,normalize_as_pct,will_power,pos_reinforcement,neg_reinforcement,obsession,store_measurement
+from util import MeasureCFG,normalize_as_pct,will_power,pos_reinforcement,neg_reinforcement,obsession,update_reccords
 
 PAGE_LAYOUT = MeasureCFG["layout"]
 QUESTION = MeasureCFG["question"]
@@ -56,9 +56,9 @@ class VarMeasurer:
 
 
 class ProgramMeasurementScreen(BaseScreen):
-    def __init__(self, **kwargs):
+    def __init__(self,app, **kwargs):
         super(ProgramMeasurementScreen, self).__init__(**kwargs)
-
+        self.app = app
         self.wp = VarMeasurer(will_power())
         self.o = VarMeasurer(obsession())
         self.nr = VarMeasurer(neg_reinforcement())
@@ -66,10 +66,11 @@ class ProgramMeasurementScreen(BaseScreen):
 
         self.vars = [self.wp, self.nr, self.o, self.pr]
         self.q_index = self.var_index = 0
+        self.add_widget(self.current_question_view())
 
     def clear_to_next_question(self):
-        self.root.clear_widgets()
-        self.root.add_widget(self.current_question_view())
+        self.clear_widgets()
+        self.add_widget(self.current_question_view())
 
     def current_question_view(self):
         return QuestionView(self)
@@ -81,7 +82,7 @@ class ProgramMeasurementScreen(BaseScreen):
     def process_questions(self):
         wp, nr, o, pr = list(map(lambda x: x.norm_score(), self.vars))
         program = normalize_as_pct(wp + nr - (o - pr), -100, 400)
-        store_measurement([wp, nr, o, pr, program])
+        update_reccords([wp, nr, o, pr, program])
 
     def next_screen(self):
         self.q_index += 1
@@ -93,7 +94,5 @@ class ProgramMeasurementScreen(BaseScreen):
             self.clear_to_next_question()
             return
         self.process_questions()
-        self.close()
+        self.app.switch_screen('main')
 
-    def build(self):
-        return self.current_question_view()

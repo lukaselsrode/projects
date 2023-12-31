@@ -171,7 +171,7 @@ def get_formatted_df() -> pd.DataFrame:
 def get_warn_index(df):
     df_index = df.index
     min_date, max_date = min(df_index), max(df_index)
-    return min_date + (PlotCFG["offset_dist"] * (max_date - min_date))
+    return min_date + (PlotCFG["warning"]["offset_dist"] * (max_date - min_date))
 
 
 def set_plot_options(df: pd.DataFrame) -> None:
@@ -203,3 +203,7 @@ def store_daily_visualization() -> None:
     df = get_formatted_df()
     set_plot_options(df)
     plt.savefig(IMG_FILE)
+
+def update_reccords(data)-> None:
+    store_measurement(data)
+    store_daily_visualization()

@@ -14,7 +14,7 @@ class ConfigureVarKeyView(GridLayout):
 
         self.app, self.var, self.data, self.file = app, var, data, file
         self.cols, self.padding, self.spacing = GRID_LAYOUT
-
+        print(self.app)
         self.exit = ExitButton(self.app)
         self.add_widget(self.exit.layout, index=0)
 
@@ -78,7 +78,8 @@ class ConfigureVarKeyView(GridLayout):
 
 
 class ConfigureScreen(BaseScreen):
-    def __init__(self, var, **kwargs):
+    def __init__(self,app, var, **kwargs):
+        self.app=app
         super(ConfigureScreen, self).__init__(**kwargs)
         self.cfg_var = var
         self.data = load_variable_data(self.cfg_var)
@@ -93,6 +94,9 @@ class ConfigureScreen(BaseScreen):
     def next_screen(self):
         self.current_var_index += 1
         if not self.current_var_index < len(self.vars_list):
-            self.close()
-        self.root.clear_widgets()
-        self.root.add_widget(self.current_cfg_view())
+            self.app.switch_screen('main')
+        else:
+            self.clear_widgets()
+            self.add_widget(self.current_cfg_view())
+
+

@@ -15,8 +15,9 @@ DROPDOWN = MCFG["dropdown"]
 ABOUT = MCFG["about"]
 
 class VariableButton(Button):
-    def __init__(self, app, **kwargs):
+    def __init__(self, dropdown, app, **kwargs):
         super(VariableButton, self).__init__(**kwargs)
+        self.dropdown = dropdown
         self.size_hint_y, self.height = None, DROPDOWN["height"]
         self.font_size = DROPDOWN["font_size"]
         self.background_color = DROPDOWN["color"]
@@ -25,14 +26,16 @@ class VariableButton(Button):
         self.bind(on_release=self.configure_variable)
 
     def configure_variable(self, instance):
-        self.app.screen_manager.add_widget(ConfigureScreen(name='cfg',var=self.text))
-        self.app.switch_screen('cfg')
+        cfg_screen_name=f'cfg_{self.text}'
+        self.app.screen_manager.add_widget(ConfigureScreen(name=cfg_screen_name,app=self.app,var=self.text))
+        self.app.switch_screen(cfg_screen_name)
+        self.dropdown.dismiss()
 
 class VarsDropDown(DropDown):
     def __init__(self, app, vars, **kwargs):
         super(VarsDropDown, self).__init__(**kwargs)
         for v in vars:
-            Vbtn = VariableButton(app, text=v)
+            Vbtn = VariableButton(self,app, text=v)
             self.add_widget(Vbtn)
 
 
@@ -49,6 +52,10 @@ class MainLineGraph(Image):
         super(MainLineGraph, self).__init__(**kwargs)
         self.source =str(IMG_FILE)
         self.fit_mode = "fill"
+
+    def reload_img(self):
+        self.source = str(IMG_FILE)
+        self.reload()
 
 
 class MainButtonLayout(BoxLayout):
@@ -79,7 +86,8 @@ class MainButtonLayout(BoxLayout):
         self.add_widget(self.about_button)
         self.add_widget(self.configure_button)
         self.add_widget(self.measure_button)
-
+    
+    
     def get_about_page(self, instance):
         self.app.switch_screen('about')
 
@@ -134,27 +142,30 @@ class MainPageLayout(BoxLayout):
         self.add_widget(self.linegraph)
         self.add_widget(self.main_buttons)
 
-
 class MainScreen(BaseScreen):
-    def __init__(self, app,**kwargs):
+    def __init__(self, app, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
         self.app = app
         store_daily_visualization()
-        self.add_widget(MainPageLayout(self.app))  # Add the layout to the screen
+        self.main_page_layout = MainPageLayout(self.app)
+        self.add_widget(self.main_page_layout)
+
 
 class MyApp(App):
     def build(self):
         self.screen_manager = ScreenManager()
-        self.screen_manager.add_widget(MainScreen(name='main',app=self))
-        self.screen_manager.add_widget(AboutScreen(name='about'))
-        self.screen_manager.add_widget(ProgramMeasurementScreen(name='measure'))
+        self.main_screen = MainScreen(name='main', app=self)  
+        self.screen_manager.add_widget(self.main_screen)
+        self.screen_manager.add_widget(AboutScreen(name='about', app=self))
+        self.screen_manager.add_widget(ProgramMeasurementScreen(name='measure', app=self))
         self.screen_manager.current = 'main'
         return self.screen_manager
 
     def switch_screen(self, screen_name, **kwargs):
-        self.screen_manager.transition.direction = 'left'  
+        if screen_name == 'main':
+            self.main_screen.main_page_layout.linegraph.reload_img()
+        self.screen_manager.transition.direction = 'left'
         self.screen_manager.current = screen_name
 
 if __name__ == "__main__":
     MyApp().run()
-
