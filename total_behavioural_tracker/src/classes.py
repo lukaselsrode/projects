@@ -3,8 +3,7 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.popup import Popup
-from kivy.uix.screenmanager import  Screen
-from kivy.app import App
+from kivy.uix.screenmanager import Screen
 from util import ClassesCFG
 
 TITLE = ClassesCFG["title"]
@@ -37,7 +36,7 @@ class ExitButton(Button):
         self.layout.add_widget(self.button)
 
     def exit_app(self, instance):
-        self.app.switch_screen('main')
+        self.app.switch_screen("main")
 
 
 class PopPrompt(Button):

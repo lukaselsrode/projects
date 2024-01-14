@@ -74,11 +74,10 @@ def unconfigured_vars():
 
 
 def store_measurement(data: list) -> None:
+    towrite = [get_date()] + data
     with open(DAT_FILE, "a+", newline="") as f:
-        if f.read(1) != "\n":
-            f.write("\n")
         writer = csv.writer(f)
-        writer.writerow([get_date()] + data)
+        writer.writerow("%s\n" % towrite)
 
 
 def get_date() -> str:
@@ -204,6 +203,7 @@ def store_daily_visualization() -> None:
     set_plot_options(df)
     plt.savefig(IMG_FILE)
 
-def update_reccords(data)-> None:
+
+def update_reccords(data) -> None:
     store_measurement(data)
     store_daily_visualization()

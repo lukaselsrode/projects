@@ -152,12 +152,17 @@ class MainScreen(BaseScreen):
 
 
 class MyApp(App):
+    def __init__(self):
+        super(MyApp, self).__init__()
+        self.main_screen = MainScreen(name='main', app=self)  
+        self.about_screen = AboutScreen(name='about', app=self)
+        self.measure_screen = ProgramMeasurementScreen(name='measure', app=self)
+    
     def build(self):
         self.screen_manager = ScreenManager()
-        self.main_screen = MainScreen(name='main', app=self)  
         self.screen_manager.add_widget(self.main_screen)
-        self.screen_manager.add_widget(AboutScreen(name='about', app=self))
-        self.screen_manager.add_widget(ProgramMeasurementScreen(name='measure', app=self))
+        self.screen_manager.add_widget(self.about_screen)
+        self.screen_manager.add_widget(self.measure_screen)
         self.screen_manager.current = 'main'
         return self.screen_manager
 
