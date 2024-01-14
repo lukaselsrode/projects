@@ -6,38 +6,40 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 from pathlib import Path
-from kivy.resources import resource_add_path, resource_find
-
-
-resource_add_path(os.path.join(os.getcwd(), "data"))
+from kivy.app import App
 
 
 def find_file(filename):
-    file = Path(resource_find(filename))
+    file_path = os.path.join(App.get_running_app().user_data_dir, "data", filename)
+    file = Path(file_path)
     if not file.exists():
         raise FileNotFoundError(f"Configuration file not found: {file}")
     return file
 
 
 def load_json(filename) -> dict:
-    # TODO: GET this file from server
-    return json.load(open(filename))
+    with open(filename,'r') as file:
+        return json.load(file)
 
 
 def write_data(data, filename):
-    # TODO: POST this file to server
-    json.dump(data, open(filename, "w"))
+    with open(filename,'w') as file:
+        return json.dump(data, file)
 
+############################################################################
+def get_dat_file():
+    return find_file("program_data.csv")
 
-# THIS SHOULD ALL COME FROM THE **SERVER**
-DAT_FILE = find_file("program_data.csv")
-IMG_FILE = find_file("program_graph.png")
-PROGRAM_FILE = find_file("program_cfg.json")
-CFG_FILE = find_file("app_cfg.json")
-ProgramCFG = load_json(PROGRAM_FILE)
-# This might just need to be a python dictionary...
-GlobalCFG = load_json(CFG_FILE)
+def get_img_file():
+    return find_file("program_graph.png")
 
+def get_app_cfg():
+    return load_json(find_file("app_config.json"))
+
+def get_program_cfg():
+    return load_json(find_file("program_cfg.json"))
+
+### SO MANY ISSUES HERE ....
 PlotCFG, ClassesCFG, MeasureCFG, ConfigCFG, AboutCFG, MCFG = (
     GlobalCFG["util"]["plot"],
     GlobalCFG["classes"],
@@ -58,7 +60,7 @@ def update_var_key_data(var_name: str, key: str, new_data: list) -> None:
         temp[var] = ProgramCFG[var]
         if var == var_name:
             temp[var][key]["user"] = new_data
-    write_data(temp, PROGRAM_FILE)
+    write_data(temp, get_program_cfg())
 
 
 def unconfigured_vars():
@@ -75,7 +77,7 @@ def unconfigured_vars():
 
 def store_measurement(data: list) -> None:
     towrite = [get_date()] + data
-    with open(DAT_FILE, "a+", newline="") as f:
+    with open(get_dat_file(), "a+", newline="") as f:
         writer = csv.writer(f)
         writer.writerow("%s\n" % towrite)
 
@@ -98,7 +100,7 @@ def new_entry_valid() -> bool:
 def overwrite_last_entry() -> None:
     df = get_formatted_df()
     df = df.drop(df.index[-1])
-    df.to_csv(DAT_FILE)
+    df.to_csv(get_dat_file())
 
 
 def create_field_questions(prefix: str, entries: list, suffix: str) -> list:
@@ -155,7 +157,7 @@ def normalize_as_pct(
 
 
 def get_formatted_df() -> pd.DataFrame:
-    df = pd.read_csv(DAT_FILE)
+    df = pd.read_csv(get_dat_file())
     ys = [i for i in df.columns if i != "date"]
     df.set_index("date", inplace=True)
     if not df.empty:
@@ -201,7 +203,7 @@ def set_plot_options(df: pd.DataFrame) -> None:
 def store_daily_visualization() -> None:
     df = get_formatted_df()
     set_plot_options(df)
-    plt.savefig(IMG_FILE)
+    plt.savefig(get_img_file())
 
 
 def update_reccords(data) -> None:

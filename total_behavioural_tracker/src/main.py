@@ -4,11 +4,13 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.dropdown import DropDown
-from util import MCFG,IMG_FILE,ProgramCFG, unconfigured_vars,store_daily_visualization,new_entry_valid,overwrite_last_entry
+from util import MCFG,ProgramCFG, unconfigured_vars,store_daily_visualization,new_entry_valid,overwrite_last_entry,get_img_file
 from classes import PageTitle,PopPrompt,BaseScreen,OneButtonPopup
 from cfg import ConfigureScreen
 from measure import ProgramMeasurementScreen
 from about import AboutScreen
+from kivy.resources import resource_add_path
+import os
 
 MBUTTONS = MCFG["buttons"]
 DROPDOWN = MCFG["dropdown"]
@@ -50,11 +52,11 @@ class MainButton(Button):
 class MainLineGraph(Image):
     def __init__(self, **kwargs):
         super(MainLineGraph, self).__init__(**kwargs)
-        self.source =str(IMG_FILE)
+        self.source =str(get_img_file())
         self.fit_mode = "fill"
 
     def reload_img(self):
-        self.source = str(IMG_FILE)
+        self.source = str(get_img_file())
         self.reload()
 
 
@@ -159,6 +161,7 @@ class MyApp(App):
         self.measure_screen = ProgramMeasurementScreen(name='measure', app=self)
     
     def build(self):
+        resource_add_path(os.path.join(self.user_data_dir, "data"))
         self.screen_manager = ScreenManager()
         self.screen_manager.add_widget(self.main_screen)
         self.screen_manager.add_widget(self.about_screen)
