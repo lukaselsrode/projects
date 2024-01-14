@@ -1,21 +1,28 @@
-Updates to Source Code:
-        - Why tf is the configscreen not getting the root-app passed to it ?? []
-        - Migrate my shitty JSON calls to FireBase, isntead of figuring out the wierdness of IOS and Android R/W perms []
-        - Fonts are default doo-doo at the moment []
-        
+TODO List
+
+Source Code Updates:
+
+ Migrate JSON calls to Firebase instead of dealing with iOS and Android read/write permissions issues.
+
+     Update the default fonts, which are currently unsatisfactory.
+
 Repository:
-        - setup public permissions []
-        - Public ReadMe []
-Builds: 
-        IOS:
-            - In theory the build script should work once I make the source code changes... []
 
-        Android:
-                The build on MacOS is absolute garbage [] 
-                         Need to use Ubuntu as standard build sys from: https://colab.research.google.com/drive/1b9gMzs6XAtxCtahxei4N0fWZk7xiPlVw?usp=sharing#scrollTo=LHmN0gZvHSXd
+ Set up public permissions.
 
+     Create a public README.
 
+Builds:
+
+    iOS:
+
+     Test the build script after making the necessary source code changes.
+
+Android:
+
+        Address issues with the build process on MacOS. Consider using Ubuntu as the standard build system, as detailed in this Google Colab link.
 
 Submission:
-    - GooglePlay []
-    - AppleStore []
+
+ Submit the application to Google Play.
+ Submit the application to the Apple Store
