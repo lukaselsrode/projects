@@ -4,7 +4,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.dropdown import DropDown
-from util import MCFG,ProgramCFG, unconfigured_vars,store_daily_visualization,new_entry_valid,overwrite_last_entry,get_img_file
+from util import MCFG, unconfigured_vars,store_daily_visualization,new_entry_valid,overwrite_last_entry,get_img_file
 from classes import PageTitle,PopPrompt,BaseScreen,OneButtonPopup
 from cfg import ConfigureScreen
 from measure import ProgramMeasurementScreen
