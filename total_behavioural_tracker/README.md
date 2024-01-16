@@ -1,7 +1,7 @@
 TODO List
 
 Source Code Updates:
-- [ ] Migrate to Firebase OR use the sel.user_data_dir of the Kivy.App class.. https://www.albertgao.xyz/2017/05/22/how-to-get-current-app-folder-in-kivy/
+- [ ] Test local file storage implementation on builds, if fails move that to FireBase
 - [ ] Update the default fonts, which are currently unsatisfactory.
 
 Repository:
