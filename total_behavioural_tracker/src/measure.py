@@ -2,7 +2,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from classes import TwoButtonLayout, ExitButton, BaseScreen
 from util import (
-    MeasureCFG,
+    get_app_cfg,
     normalize_as_pct,
     will_power,
     pos_reinforcement,
@@ -10,7 +10,7 @@ from util import (
     obsession,
     update_reccords,
 )
-
+MeasureCFG = get_app_cfg('measure')
 PAGE_LAYOUT = MeasureCFG["layout"]
 QUESTION = MeasureCFG["question"]
 

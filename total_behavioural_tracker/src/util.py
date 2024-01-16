@@ -4,86 +4,87 @@ import json
 import csv
 import pandas as pd
 from matplotlib import pyplot as plt
-import seaborn as sns
-from pathlib import Path
 from kivy.app import App
+from pathlib import Path
+import seaborn as sns
+from kivy.resources import resource_find
 
 
 def find_file(filename):
-    file_path = os.path.join(App.get_running_app().user_data_dir, "data", filename)
+    try:
+        file_path = resource_find(filename)
+    except:
+        file_path = os.path.join(App.get_running_app().user_data_dir, "data", filename)
+    finally:
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", filename)
     file = Path(file_path)
-    if not file.exists():
-        raise FileNotFoundError(f"Configuration file not found: {file}")
-    return file
+    if file.exists():
+        return file
+    raise FileNotFoundError(f"file not found: {filename}")
+
 
 
 def load_json(filename) -> dict:
-    with open(filename,'r') as file:
+    with open(filename, "r") as file:
         return json.load(file)
 
 
-def write_data(data, filename):
-    with open(filename,'w') as file:
-        return json.dump(data, file)
+def get_json_file(filename, key=None):
+    load = load_json(find_file(filename))
+    return load[key] if key else load
 
-############################################################################
+
 def get_dat_file():
     return find_file("program_data.csv")
+
 
 def get_img_file():
     return find_file("program_graph.png")
 
-def get_app_cfg():
-    return load_json(find_file("app_config.json"))
 
-def get_program_cfg():
-    return load_json(find_file("program_cfg.json"))
-
-### SO MANY ISSUES HERE ....
-PlotCFG, ClassesCFG, MeasureCFG, ConfigCFG, AboutCFG, MCFG = (
-    GlobalCFG["util"]["plot"],
-    GlobalCFG["classes"],
-    GlobalCFG["measure"],
-    GlobalCFG["cfg"],
-    GlobalCFG["about"],
-    GlobalCFG["main"],
-)
+def get_app_cfg(key=None):
+    return get_json_file("app_cfg.json", key)
 
 
-def load_variable_data(varname) -> dict:
-    return ProgramCFG[varname]
+def get_program_cfg(key=None):
+    return get_json_file("program_cfg.json", key)
 
 
-def update_var_key_data(var_name: str, key: str, new_data: list) -> None:
-    temp = {}
-    for var in ProgramCFG.keys():
-        temp[var] = ProgramCFG[var]
-        if var == var_name:
-            temp[var][key]["user"] = new_data
-    write_data(temp, get_program_cfg())
-
-
-def unconfigured_vars():
-    vars, unconfigured = (
-        list(ProgramCFG.keys()),
-        [],
-    )
-    for v in vars:
-        for v in load_variable_data(v).values():
-            if not v["user"]:
-                unconfigured.append(v)
-    return unconfigured
+def write_data(data, filename):
+    with open(filename, "w") as file:
+        return json.dump(data, file)
 
 
 def store_measurement(data: list) -> None:
-    towrite = [get_date()] + data
-    with open(get_dat_file(), "a+", newline="") as f:
+    file = get_dat_file()
+    with open(file, "a+", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow("%s\n" % towrite)
+        writer.writerow([''])
+        writer.writerow([get_date()] + data)
 
 
 def get_date() -> str:
     return "-".join([str(i) for i in time.localtime()[:3]])
+
+
+def normalize_as_pct(
+    val: float or int, min_val: float or int, val_range: float or int
+) -> int:
+    return round(100 * ((val - min_val) / val_range))
+
+
+def get_formatted_df() -> pd.DataFrame:
+    file = get_dat_file()
+    df = pd.read_csv(file)
+    ys = [i for i in df.columns if i != "date"]
+    df.set_index("date", inplace=True)
+    if not df.empty:
+        df.index = pd.to_datetime(df.index, yearfirst=True)
+        df = df[ys]
+    else:
+        df = pd.DataFrame(columns=ys)
+        df.index = pd.to_datetime([])
+    return df
 
 
 def new_entry_valid() -> bool:
@@ -109,8 +110,35 @@ def create_field_questions(prefix: str, entries: list, suffix: str) -> list:
     return list(map(lambda x: " ".join([prefix, x, suffix]), entries))
 
 
-def mk_questions(cfg_file: str, prompts_cfg: list) -> list:
-    file, q = load_variable_data(cfg_file), []
+def update_var_key_data(
+    var_name: str,
+    key: str,
+    new_data: list,
+) -> None:
+    program_cfg,file = get_program_cfg(),find_file("program_cfg.json")
+    temp = {}
+    for var in program_cfg.keys():
+        temp[var] = program_cfg[var]
+        if var == var_name:
+            temp[var][key]["user"] = new_data
+    write_data(temp, file)
+
+
+def unconfigured_vars() -> list:
+    program_cfg = get_program_cfg()
+    vars, unconfigured = (
+        list(program_cfg.keys()),
+        [],
+    )
+    for var in vars:
+        for v in program_cfg[var].values():
+            if not v["user"]:
+                unconfigured.append(v)
+    return unconfigured
+
+
+def mk_questions(var: str, prompts_cfg: list) -> list:
+    file, q = get_program_cfg(var), []
     for pre, field, suf in prompts_cfg:
         q += create_field_questions(pre, file[field]["user"], suf)
     return q
@@ -150,35 +178,18 @@ def pos_reinforcement() -> float:
     return mk_questions("positive reinforcement", args)
 
 
-def normalize_as_pct(
-    val: float or int, min_val: float or int, val_range: float or int
-) -> int:
-    return round(100 * ((val - min_val) / val_range))
-
-
-def get_formatted_df() -> pd.DataFrame:
-    df = pd.read_csv(get_dat_file())
-    ys = [i for i in df.columns if i != "date"]
-    df.set_index("date", inplace=True)
-    if not df.empty:
-        df.index = pd.to_datetime(df.index, yearfirst=True)
-        df = df[ys]
-    else:
-        df = pd.DataFrame(columns=ys)
-        df.index = pd.to_datetime([])
-    return df
-
-
 def get_warn_index(df):
+    plot_cfg=get_app_cfg()["util"]["plot"]
     df_index = df.index
     min_date, max_date = min(df_index), max(df_index)
-    return min_date + (PlotCFG["warning"]["offset_dist"] * (max_date - min_date))
+    return min_date + (plot_cfg["warning"]["offset_dist"] * (max_date - min_date))
 
 
 def set_plot_options(df: pd.DataFrame) -> None:
-    WARN = PlotCFG["warning"]
-    LEG = PlotCFG["legend"]
-    AXES = PlotCFG["axes"]
+    plot_cfg=get_app_cfg()["util"]["plot"]
+    WARN = plot_cfg["warning"]
+    LEG = plot_cfg["legend"]
+    AXES = plot_cfg["axes"]
     sns.set_theme(context="notebook", style="darkgrid", palette="muted")
     if not df.empty:
         df.plot(style=["ms-", "go-", "y^-", "bs-", "rs-"])

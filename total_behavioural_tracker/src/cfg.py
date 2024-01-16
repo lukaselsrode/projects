@@ -1,9 +1,10 @@
 from kivy.uix.textinput import TextInput
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
-from util import ConfigCFG, load_variable_data, update_var_key_data
+from util import get_app_cfg, get_program_cfg, update_var_key_data
 from classes import ExitButton, PageTitle, TwoButtonLayout, PopPrompt, BaseScreen
 
+ConfigCFG = get_app_cfg("cfg")
 GRID_LAYOUT = ConfigCFG["layout"]
 TEXT = ConfigCFG["text"]
 
@@ -85,7 +86,7 @@ class ConfigureScreen(BaseScreen):
         self.app = app
         super(ConfigureScreen, self).__init__(**kwargs)
         self.cfg_var = var
-        self.data = load_variable_data(self.cfg_var)
+        self.data = get_program_cfg(self.cfg_var)
         self.vars_list = list(self.data.keys())
         self.current_var_index = 0
         self.add_widget(self.current_cfg_view())

@@ -1,9 +1,10 @@
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
-from classes import BaseScreen,TwoButtonLayout,PageTitle,ExitButton
+from classes import BaseScreen, TwoButtonLayout, PageTitle, ExitButton
 from webbrowser import open_new_tab as urlopen
-from util import AboutCFG
+from util import get_app_cfg
 
+AboutCFG = get_app_cfg("about")
 URLS = AboutCFG["urls"]
 creditor_url = URLS["creditor"]
 theory_url = URLS["theory"]
@@ -28,9 +29,9 @@ class HyperlinkLabel(Label):
 
 
 class AboutScreen(BaseScreen):
-    def __init__(self,app, **kwargs):
-        super(AboutScreen,self).__init__(**kwargs)
-        self.app=app
+    def __init__(self, app, **kwargs):
+        super(AboutScreen, self).__init__(**kwargs)
+        self.app = app
         self.layout = BoxLayout(orientation="vertical")
         self.exit = ExitButton(application=self.app)
         self.title_label = PageTitle(text="About The Total Behavioral Tracker App")

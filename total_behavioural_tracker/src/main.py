@@ -1,20 +1,34 @@
+import os
+import shutil
+from pathlib import Path
 from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.dropdown import DropDown
-from util import MCFG, unconfigured_vars,store_daily_visualization,new_entry_valid,overwrite_last_entry,get_img_file
-from classes import PageTitle,PopPrompt,BaseScreen,OneButtonPopup
+from kivy.resources import resource_add_path
+from util import (
+    get_program_cfg,
+    get_app_cfg,
+    get_img_file,
+    unconfigured_vars,
+    store_daily_visualization,
+    new_entry_valid,
+    overwrite_last_entry,
+)
+from classes import PageTitle, PopPrompt, BaseScreen, OneButtonPopup
 from cfg import ConfigureScreen
 from measure import ProgramMeasurementScreen
 from about import AboutScreen
-from kivy.resources import resource_add_path
-import os
 
+
+ProgramCFG = get_program_cfg()
+MCFG = get_app_cfg("main")
 MBUTTONS = MCFG["buttons"]
 DROPDOWN = MCFG["dropdown"]
 ABOUT = MCFG["about"]
+
 
 class VariableButton(Button):
     def __init__(self, dropdown, app, **kwargs):
@@ -28,16 +42,19 @@ class VariableButton(Button):
         self.bind(on_release=self.configure_variable)
 
     def configure_variable(self, instance):
-        cfg_screen_name=f'cfg_{self.text}'
-        self.app.screen_manager.add_widget(ConfigureScreen(name=cfg_screen_name,app=self.app,var=self.text))
+        cfg_screen_name = f"cfg_{self.text}"
+        self.app.screen_manager.add_widget(
+            ConfigureScreen(name=cfg_screen_name, app=self.app, var=self.text)
+        )
         self.app.switch_screen(cfg_screen_name)
         self.dropdown.dismiss()
+
 
 class VarsDropDown(DropDown):
     def __init__(self, app, vars, **kwargs):
         super(VarsDropDown, self).__init__(**kwargs)
         for v in vars:
-            Vbtn = VariableButton(self,app, text=v)
+            Vbtn = VariableButton(self, app, text=v)
             self.add_widget(Vbtn)
 
 
@@ -52,7 +69,7 @@ class MainButton(Button):
 class MainLineGraph(Image):
     def __init__(self, **kwargs):
         super(MainLineGraph, self).__init__(**kwargs)
-        self.source =str(get_img_file())
+        self.source = str(get_img_file())
         self.fit_mode = "fill"
 
     def reload_img(self):
@@ -88,10 +105,9 @@ class MainButtonLayout(BoxLayout):
         self.add_widget(self.about_button)
         self.add_widget(self.configure_button)
         self.add_widget(self.measure_button)
-    
-    
+
     def get_about_page(self, instance):
-        self.app.switch_screen('about')
+        self.app.switch_screen("about")
 
     def show_cfg_wheel(self, instance):
         vars = list(ProgramCFG.keys())
@@ -114,8 +130,8 @@ class MainButtonLayout(BoxLayout):
             popup.open()
 
     def start_measurement(self):
-        self.app.switch_screen('measure')
-        
+        self.app.switch_screen("measure")
+
     def confirm_overwrite(self):
         self.popup = PopPrompt(
             title="Confirm Measurement Overwrite",
@@ -144,6 +160,7 @@ class MainPageLayout(BoxLayout):
         self.add_widget(self.linegraph)
         self.add_widget(self.main_buttons)
 
+
 class MainScreen(BaseScreen):
     def __init__(self, app, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
@@ -156,24 +173,41 @@ class MainScreen(BaseScreen):
 class MyApp(App):
     def __init__(self):
         super(MyApp, self).__init__()
-        self.main_screen = MainScreen(name='main', app=self)  
-        self.about_screen = AboutScreen(name='about', app=self)
-        self.measure_screen = ProgramMeasurementScreen(name='measure', app=self)
-    
+        self.setup_local_data()
+        self.setup_application_screens()
+
+    def setup_local_data(self):
+        self.dat_dir = os.path.join(self.user_data_dir, "data")
+        os.makedirs(self.dat_dir, exist_ok=True)
+        src_dir = os.path.abspath("data")
+        for fcp in os.listdir(src_dir):
+            src_file, dst_file = os.path.join(src_dir, fcp), os.path.join(
+                self.dat_dir, fcp
+            )
+            if not os.path.exists(dst_file):
+                shutil.copy(src_file, dst_file)
+        resource_add_path(self.dat_dir)
+
+    def setup_application_screens(self):
+        self.main_screen = MainScreen(name="main", app=self)
+        self.about_screen = AboutScreen(name="about", app=self)
+        self.measure_screen = ProgramMeasurementScreen(name="measure", app=self)
+
     def build(self):
-        resource_add_path(os.path.join(self.user_data_dir, "data"))
         self.screen_manager = ScreenManager()
         self.screen_manager.add_widget(self.main_screen)
         self.screen_manager.add_widget(self.about_screen)
         self.screen_manager.add_widget(self.measure_screen)
-        self.screen_manager.current = 'main'
+        self.screen_manager.current = "main"
         return self.screen_manager
 
-    def switch_screen(self, screen_name, **kwargs):
-        if screen_name == 'main':
+    def switch_screen(self, screen_name):
+        if screen_name == "main":
+            self.screen_manager.transition.direction = "right"
             self.main_screen.main_page_layout.linegraph.reload_img()
-        self.screen_manager.transition.direction = 'left'
+        self.screen_manager.transition.direction = "left"
         self.screen_manager.current = screen_name
+
 
 if __name__ == "__main__":
     MyApp().run()
