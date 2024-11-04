@@ -1,3 +1,4 @@
+// usage : $ go run fib.go <number>
 package main
 
 import (
