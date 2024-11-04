@@ -42,7 +42,7 @@ build_ios() {
     toolchain pip install matplotlib pandas seaborn
     toolchain create "$project_name" ./src/
     toolchain update "$project_name-ios"
-    cp src/config/app_logo.png "$project_name-ios"/icon.png
+    cp ./app_logo.png "$project_name-ios"/icon.png
     chmod -R 777 "$project_name-ios"
     open "${project_name}-ios/${project_name}.xcodeproj" || { log "Failed to open Xcode project"; exit 1; }
 }
