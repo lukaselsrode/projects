@@ -59,5 +59,5 @@ func main() {
     }
 
     res := fibDoubling(arg)
-    fmt.Printf("Fibonaci Number of %d is : %d\n", arg ,res)
+    fmt.Printf("Fibonacci Number of %d is : %d\n", arg ,res)
 }
