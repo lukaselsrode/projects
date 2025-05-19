@@ -1,0 +1,66 @@
+# Application Configuration
+config:
+  ignore_negative_pe: false
+  ignore_negative_pb: false
+  dividend_threshold: 2.5
+  metric_threshold: 4
+  selloff_threshold: 30
+  weekly_investment: 400
+  etfs:
+    - SPY
+    - VOO
+    - VTI
+    - QQQ
+    - SCHD
+
+# Sector/Industry specific PE and PB ratios
+Consumer Services:
+  default: [6, 1.9]
+  Other Consumer Services: [20,5.5]
+  Broadcasting: [13.11,0.8]
+  Casinos: [18,11]
+  Entertainment: [32.09,2.59]
+  Restaurants: [18.93,null]
+  Resorts: [15,11]
+  Cruise Lines: [14,null]
+
+Technology Services:
+  default: [40, 6]
+  Software: [37,9]
+  Information Technology Services: [33.6,4]
+
+Retail Trade:
+  default: [28.79, 4]
+  Discount Stores: [28.01,1.9]
+  Specialty Stores: [null,7.4]
+  Apparel: [13.77,2.5]
+  Drugstore: [31.44,5.2]
+  Food: [22,2.9]
+  Electronics: [27,2.92]
+
+Health Technology:
+  default: [34.17,5.5]
+  Pharmaceuticals: [80,5.2]
+  Biotechnology: [20.7,6.1]
+  Medical: [35,5.12]
+
+Communications:
+  default: [24, 1.6]
+  Wireless Telecommunications: [36,5]
+
+Electronic Technology:
+  default: [40, 6]
+  Semiconductors: [33.8,7.4]
+  Telecommunications Equipment: [48,5.14]
+  Electronic Production Equipment: [44,5.1]
+  Electronic Equipment: [27,2.9]
+  Electronic Instruments: [28,3]
+  Computer Processing Hardware: [26,null]
+  Aerospace Defense: [28.77,5.08]
+
+Consumer Durables:
+  default: [6, 4]
+  Motor Vehicles: [12.3,4.6]
+
+Transportation:
+  default: [13.22, 2]

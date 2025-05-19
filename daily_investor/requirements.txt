@@ -1,0 +1,5 @@
+pyyaml
+pandas
+pyotp
+robin_stocks
+bs4
