@@ -32,7 +32,7 @@ A mobile application to track your personalized 'daily program', a qualitative m
 - Improve UI/UX with native components
 - Enhance performance and stability
 
-### Daily Investor - [FINANCIAL]
+### Daily Investor - [COMPLETED/TWEAKING]
 Financial tools and scripts for investment tracking and analysis. Previously integrated with Robinhood API for automated trading and portfolio management.
 
 ### Sys-Admin
