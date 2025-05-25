@@ -242,14 +242,13 @@ def generate_daily_buy_list():
             csvwriter.writerow(["Symbol", "Value", "BuySellRatio", "AggValue"])
             for symbol, stock_data in data.items():
                 value_metric = stock_data["value_metric"]
-                buy_to_sell_ratio = stock_data["ratings"]["buy_to_sell_ratio"] if  stock_data["ratings"]["buy_to_sell_ratio"] else None
-                
-                csvwriter.writerow([
-                    symbol,
-                    value_metric,
-                    buy_to_sell_ratio,
-                    value_metric * buy_to_sell_ratio if buy_to_sell_ratio else None,  # Aggregated value based on value_metric and buy_to_sell_ratio
-                ])
+                if (buy_to_sell_ratio := stock_data["ratings"]["buy_to_sell_ratio"]) is not None:
+                    csvwriter.writerow([
+                        symbol,
+                        value_metric,
+                        buy_to_sell_ratio,
+                        value_metric * buy_to_sell_ratio,  # Aggregated value based on value_metric and buy_to_sell_ratio
+                    ])
         logger.info(f"Stored Picks @ {filename}")
 
     if confirm('Store Daily Undervalued Stocks ?'):
@@ -263,13 +262,16 @@ def aggragate_picks():
 
 def add_funds_to_account() -> None:
     if get_available_cash() < float(WEEKLY_INVESTMENT):
-        bank_accounts = rb.get_linked_bank_accounts()
-        ach=bank_accounts[0].get('url') 
-        resp=rb.deposit_funds_to_robinhood_account(ach,WEEKLY_INVESTMENT)
-        logger.info(f"Deposit response: {resp}")
-        logger.info(f"Request To Deposit ${resp.get('ammount')} : {resp.get('state')}")
+        available_cash = get_available_cash()
+        amount_needed = float(WEEKLY_INVESTMENT) - available_cash
+        if confirm(f"Not Enough Cash Available: ${available_cash:,.2f} < ${float(WEEKLY_INVESTMENT):,.2f}\nAdd ${amount_needed:,.2f} to reach weekly investment target?"):
+            bank_accounts = rb.get_linked_bank_accounts()
+            ach = bank_accounts[0].get('url') 
+            resp = rb.deposit_funds_to_robinhood_account(ach, amount_needed)
+            logger.info(f"Deposit response: {resp}")
+            logger.info(f"Request To Deposit ${amount_needed:,.2f} : {resp.get('state')}")
     else:
-        logger.info(f"Not Adding Funds To Account, Not Enough Cash Available: {get_available_cash()} < {WEEKLY_INVESTMENT}")
+        logger.info(f"Not Adding Funds To Account, Not Enough Cash Available: {get_available_cash()} > {WEEKLY_INVESTMENT}")
     
 def sell(symbol:str,quantity:float):
     holdings = rb.build_holdings()
@@ -301,15 +303,27 @@ def make_buys():
                 logger.info(f"{etf} Buy Response: {res}")
 
     def make_picked_buys():
-        symbols_picked = aggragate_picks()['Symbol'].to_numpy()
+        # Get the aggregated picks with their AggValue
+        picks_df = aggragate_picks()
+        total_agg_value = picks_df['AggValue'].sum()
         
-        for s in symbols_picked:
-            # Confirm buy and place order
-            if confirm(f'Buy {s}?'):
-                logger.info("Input buy amount:")
-                amount = float(input())
-                res = rb.orders.order_buy_fractional_by_price(s, amount)
-                logger.info(f"Order Response for {s}: {res}")
+        if total_agg_value <= 0:
+            logger.warning("No valid aggregation values found for picks")
+            return
+            
+        # Get remaining cash
+        remaining_cash = get_available_cash()
+        logger.info(f"Remaining cash to invest: ${remaining_cash:,.2f}")
+        
+        for _, row in picks_df.iterrows():
+            symbol = row['Symbol']
+            # Calculate allocation based on AggValue weight
+            allocation = (row['AggValue'] / total_agg_value) * remaining_cash
+            
+            # Confirm buy and place order with calculated amount
+            if confirm(f'Buy ${allocation:,.2f} of {symbol}? (Weight: {row["AggValue"]/total_agg_value:.1%})'):
+                res = rb.orders.order_buy_fractional_by_price(symbol, allocation)
+                logger.info(f"Order Response for {symbol}: {res}")
 
     def reset_cash_available():
         global CASH_AVAILABLE

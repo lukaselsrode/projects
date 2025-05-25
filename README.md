@@ -8,29 +8,66 @@ new repository as I get back into the job-market.
 ## Project Overview
 
 ### Game Development - [COMPLETED]
+Video Games are how I originally got into computers. I did not use any game-engines and wrote everything from source. # My Public Projects
+
+An overview of all my public projects. I'm always open to job opportunities and contributing to projects I think have value. 
+This repository demonstrates my programming proficiency. My main language is Python, but I'm also comfortable writing in: 
+C, Go, JS, Bash, and HTML. Always open to learning new languages and building "cool-stuff". I had another GitHub, but thought it'd be nice to start fresh with a 
+new repository as I get back into the job market.
+
+## Project Overview
+
+### Game Development - [COMPLETED]
 Video Games are how I originally got into computers. I did not use any game-engines and wrote everything from source. 
+- Various game development projects demonstrating core programming concepts
 
-### Total Behavioral Tracker - [IN-PROGRESS]
-A mobile application built in Kivy to track your personalized 'daily program', a qualitative measurement of your current emotional and spiritual fitness based on personalized values, activities, goals, and motivators. The application also accounts for underlying mental-health conditions and potential substance abuse issues.  
+### Total Behavioral Tracker - [IN-PROGRESS - PLANNED REWRITE]
+A mobile application to track your personalized 'daily program', a qualitative measurement of your current emotional and spiritual fitness based on personalized values, activities, goals, and motivators. The application also accounts for underlying mental-health conditions and potential substance abuse issues.
 
-### Fintech - [DEPRECATED/OLD]
-My background is in DevOps in the fin-tech sector. I was writing a few test libraries to hookup to my RobinHood account to their API. 
-I haven't worked on this project in over a year, so don't get mad if most of this is deprecated. 
+**Current Status**: Initially built with Kivy (Python), but planning to port to React Native or Flutter due to build process challenges with Kivy.
+
+**Planned Improvements**:
+- Migrate from Kivy to React Native or Flutter for better mobile development experience
+- Streamline build and deployment process
+- Improve UI/UX with native components
+- Enhance performance and stability
+
+### Daily Investor - [FINANCIAL]
+Financial tools and scripts for investment tracking and analysis. Previously integrated with Robinhood API for automated trading and portfolio management.
 
 ### Sys-Admin
-Some Shell Scripts I run on my personal machine to keep everything up-to-date and orderly. Getting rid of repetitive work is the reason why I got into programming. 
+Collection of system administration scripts for automation and maintenance:
 
-### Infosec
-Intellectual curiosity killed the cat, so naturally I like red-teaming systems. Mostly learning material. A few custom networking utilities. 
+#### System Update Script ([sys_update.sh](cci:7://file:///Users/lukaselsrode/dev_work/projects/sys_admin/sys_update.sh:0:0-0:0))
+- Cross-platform system updater (Linux/macOS/Windows)
+- Automatic OS detection and appropriate package management
+- Homebrew support for macOS
+- Windows Update integration
+- System cleanup and maintenance
 
-### Misc
-Some scripts that don't fit into any of my projects that I've found helpful to keep on-hand.
+```bash
+# Quick setup
+alias machine_update="sudo sh /path/to/sys_update.sh"
+```
 
-
-### Up-Skilling
-self education materials, the moment you stop growing is the moment you start dying.  
-
-
-
+```bash
+projects/
+├── daily_investor/    # Financial tools and trading scripts
+├── game_dev/          # Game development projects
+├── infosec/           # Security tools and research
+├── sys_admin/         # System administration scripts
+│   ├── README.md      # Documentation
+│   └── sys_update.sh  # Cross-platform updater
+├── testing/           # Test cases and frameworks
+├── total_behavioural_tracker/  # Kivy mobile application
+└── upskilling/       # Learning projects
+    └── golang/       # Go language learning
+        ├── fib.go
+        ├── hello_world.go
+        ├── scanner.go
+        └── simple_service/  # Network service example
+            ├── client.go
+            └── server.go
+``` 
 
 

@@ -2,8 +2,8 @@
 config:
   ignore_negative_pe: false
   ignore_negative_pb: false
-  dividend_threshold: 2.5
-  metric_threshold: 4
+  dividend_threshold: 3
+  metric_threshold: 5
   selloff_threshold: 30
   weekly_investment: 400
   etfs:
@@ -12,6 +12,7 @@ config:
     - VTI
     - QQQ
     - SCHD
+
 
 # Sector/Industry specific PE and PB ratios
 Consumer Services:
