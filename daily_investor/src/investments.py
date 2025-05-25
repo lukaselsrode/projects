@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from util import (
     get_investment_ratios,
+    update_industry_valuations,
     IGNORE_NEGATIVE_PE,
     IGNORE_NEGATIVE_PB,
     DIVIDEND_THRESHOLD,
@@ -352,10 +353,15 @@ def wipe_data():
         logger.info('Data Directory Cleared')
 
 
+def update_valuations():
+    if confirm('Update Valuations ?'):
+        update_industry_valuations()
+
 def run_daily_strat():
     date = datetime.datetime.now()
     logger.info(f'Running Automated Investment Strategy for {date}')
     wipe_data()
+    update_industry_valuations()
     generate_daily_buy_list()
     aggragate_picks()
     add_funds_to_account()
