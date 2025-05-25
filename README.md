@@ -39,6 +39,7 @@ Collection of system administration scripts for automation and maintenance:
 alias machine_update="sudo sh /path/to/sys_update.sh"
 ```
 
+## Project Structure
 ```bash
 projects/
 ├── daily_investor/    # Financial tools and trading scripts
