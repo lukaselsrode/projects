@@ -5,11 +5,13 @@ An automated investment strategy tool that helps identify and execute stock trad
 ## Features
 
 - **Automated Stock Screening**: Scans for undervalued stocks based on P/E, P/B ratios, and dividend yields
-- **Sector/Industry Analysis**: Applies different valuation thresholds based on sector and industry benchmarks
+- **Live Market Data**: Automatically updates P/E and P/B ratio benchmarks by scraping current market data from Finviz
+- **Sector/Industry Analysis**: Applies different valuation thresholds based on real-time sector and industry benchmarks
 - **Portfolio Management**: Automates buying and selling decisions with configurable parameters
 - **ETF Dollar-Cost Averaging**: Supports automated periodic investments in a set of predefined ETFs
 - **Risk Management**: Implements stop-loss and take-profit mechanisms
 - **Logging**: Comprehensive logging of all operations and decisions
+- **Valuation Updates**: Command-line tool to manually update sector/industry valuation metrics
 
 ## Prerequisites
 
@@ -91,7 +93,32 @@ Technology Services:
   Information Technology Services: [33.6, 4]
 ```
 
-To modify the valuation criteria for a specific industry, add or update its entry under the appropriate sector. The first number represents the P/E ratio threshold, and the second number represents the P/B ratio threshold. Use `null` to ignore a particular metric for an industry.
+#### Automatic Valuation Updates
+
+The system can automatically update sector and industry valuation metrics using live market data from Finviz. To update the valuations:
+
+```bash
+python -c "from util import update_industry_valuations; update_industry_valuations()"
+```
+
+Or use the included command in the investment interface:
+
+```bash
+python src/investments.py
+# Then choose 'Update Valuations' from the menu
+```
+
+The update process will:
+1. Fetch current P/E and P/B ratios for all sectors and industries from Finviz
+2. Update the `investments.yaml` file with the latest metrics
+3. Preserve any custom thresholds you've set
+4. Show a detailed report of all changes made
+
+#### Manual Overrides
+
+To set custom valuation criteria for a specific industry, add or update its entry under the appropriate sector. The first number represents the P/E ratio threshold, and the second number represents the P/B ratio threshold. Use `null` to ignore a particular metric for an industry.
+
+Custom values will be preserved during automatic updates, allowing you to maintain manual control over specific sectors or industries while still benefiting from automatic updates for others.
 
 ## Usage
 
@@ -107,6 +134,7 @@ python src/investments.py
 - **make_buys()**: Handles the execution of buy orders for both individual stocks and ETFs
 - **make_sales()**: Manages sell orders based on predefined criteria
 - **get_available_cash()**: Calculates available cash, accounting for pending orders
+- **update_valuations()**: Updates sector/industry P/E and P/B ratios using current market data
 
 ### Supported Commands
 
@@ -115,6 +143,7 @@ python src/investments.py
 - Execute buys: `make_buys()`
 - Execute sales: `make_sales()`
 - Check available cash: `get_available_cash()`
+- Update valuations: `update_valuations()`
 
 ## Strategy Details
 
