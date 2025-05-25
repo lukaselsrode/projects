@@ -2,8 +2,7 @@
 
 An overview of all my public projects. I'm always open to job opportunities and contributing to projects I think have value. 
 This repository is to demonstrate my programming proficiency. My main language is Python, but I am also comfortable writing in: 
-C,Go,JavaScript,TypeScript,Bash. Always open to learning a new language and build "cool-stuff". I had another GitHub, but thought it'd be nice to start fresh with a 
-new repository as I get back into the job-market. 
+C,Go,JavaScript,TypeScript,Bash. Always open to learning a new language and build "cool-stuff". I had another GitHub, but thought it'd be nice to start fresh with a new repository. 
 
 ## Project Overview
 
