@@ -3,6 +3,7 @@ import re
 import os
 import logging
 import requests
+from datetime import datetime
 from bs4 import BeautifulSoup
 from typing import Dict, Optional
 
@@ -30,6 +31,7 @@ DIVIDEND_THRESHOLD = app_config.get('dividend_threshold', 2.5)
 METRIC_THRESHOLD = app_config.get('metric_threshold', 4)
 SELLOFF_THRESHOLD = app_config.get('selloff_threshold', 30)
 WEEKLY_INVESTMENT = str(app_config.get('weekly_investment', 400))
+INDEX_PCT = app_config.get('index_pct', 0.85)
 ETFS = app_config.get('etfs', ['SPY', 'VOO', 'VTI', 'QQQ', 'SCHD'])
 
 
@@ -92,14 +94,6 @@ def get_investment_ratios(sector, industry=None):
 
 
 def fetch_finviz_data(url: str) -> Dict[str, Dict[str, Optional[float]]]:
-    """Fetch and parse Finviz group data.
-    
-    Args:
-        url: URL to fetch data from (sector or industry)
-        
-    Returns:
-        Dictionary mapping group names to their PE and PB ratios
-    """
     headers = {"User-Agent": "Mozilla/5.0"}
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
@@ -122,11 +116,6 @@ def fetch_finviz_data(url: str) -> Dict[str, Dict[str, Optional[float]]]:
 
 
 def update_industry_valuations(verbose: bool = True) -> None:
-    """Update the investments.yaml file with latest PE/PB ratios from Finviz.
-    
-    Args:
-        verbose: If True, prints detailed logs about changes
-    """
     # URLs for Finviz group data
     SECTOR_URL = "https://finviz.com/groups.ashx?g=sector&v=120&o=pe"
     INDUSTRY_URL = "https://finviz.com/groups.ashx?g=industry&v=120&o=pe"

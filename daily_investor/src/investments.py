@@ -17,7 +17,8 @@ from util import (
     METRIC_THRESHOLD,
     SELLOFF_THRESHOLD,
     WEEKLY_INVESTMENT,
-    ETFS
+    ETFS,
+    INDEX_PCT
 )
 
 
@@ -295,49 +296,64 @@ def make_sales():
     logger.info('Sales completed')
 
 def make_buys():
-    
-    def make_etf_buys():
-        buy_price_etf = float(WEEKLY_INVESTMENT) / len(ETFS)
+    def calculate_allocations():
+        total_cash = get_available_cash()
+        etf_amount = total_cash * INDEX_PCT
+        stock_amount = total_cash - etf_amount
+        return etf_amount, stock_amount
+
+    def make_etf_buys(amount):
+        if amount <= 0:
+            logger.info("No funds allocated to ETFs")
+            return
+            
+        buy_price_etf = amount / len(ETFS)
+        logger.info(f"Allocating ${amount:,.2f} to ETFs (${buy_price_etf:,.2f} per ETF)")
+        
         for etf in ETFS:
-            if confirm(f"Buy {buy_price_etf} of {etf}?"):
-                res=rb.orders.order_buy_fractional_by_price(etf,buy_price_etf)
+            if confirm(f"Buy ${buy_price_etf:,.2f} of {etf}?"):
+                res = rb.orders.order_buy_fractional_by_price(etf, buy_price_etf)
                 logger.info(f"{etf} Buy Response: {res}")
 
-    def make_picked_buys():
+    def make_picked_buys(amount):
+        if amount <= 0:
+            logger.info("No funds allocated to picked stocks")
+            return
+            
         # Get the aggregated picks with their AggValue
         picks_df = aggragate_picks()
+        if picks_df.empty:
+            logger.warning("No stock picks available")
+            return
+            
         total_agg_value = picks_df['AggValue'].sum()
-        
         if total_agg_value <= 0:
             logger.warning("No valid aggregation values found for picks")
             return
-            
-        # Get remaining cash
-        remaining_cash = get_available_cash()
-        logger.info(f"Remaining cash to invest: ${remaining_cash:,.2f}")
+        
+        logger.info(f"Allocating ${amount:,.2f} to picked stocks")
         
         for _, row in picks_df.iterrows():
             symbol = row['Symbol']
             # Calculate allocation based on AggValue weight
-            allocation = (row['AggValue'] / total_agg_value) * remaining_cash
+            allocation = (row['AggValue'] / total_agg_value) * amount
             
             # Confirm buy and place order with calculated amount
             if confirm(f'Buy ${allocation:,.2f} of {symbol}? (Weight: {row["AggValue"]/total_agg_value:.1%})'):
                 res = rb.orders.order_buy_fractional_by_price(symbol, allocation)
                 logger.info(f"Order Response for {symbol}: {res}")
 
-    def reset_cash_available():
-        global CASH_AVAILABLE
-        CASH_AVAILABLE = get_available_cash()
-
+    # Calculate allocations based on INDEX_PCT
+    etf_amount, stock_amount = calculate_allocations()
+    logger.info(f"Allocation: ${etf_amount:,.2f} to ETFs ({INDEX_PCT:.0%}), ${stock_amount:,.2f} to picked stocks ({(1-INDEX_PCT):.0%})")
     
-    if confirm('Buy ETFs ?'):
-        make_etf_buys()
-
-    reset_cash_available()
-
-    if confirm('Buy Picked Stocks ?'):
-        make_picked_buys()
+    # Make ETF buys first
+    if etf_amount > 0 and confirm(f'Buy ETFs (${etf_amount:,.2f})?'):
+        make_etf_buys(etf_amount)
+    
+    # Make picked stock buys with remaining cash
+    if stock_amount > 0 and confirm(f'Buy Picked Stocks (${stock_amount:,.2f})?'):
+        make_picked_buys(stock_amount)
     
 
 def wipe_data():
