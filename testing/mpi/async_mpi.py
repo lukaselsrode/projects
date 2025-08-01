@@ -1,3 +1,8 @@
+"""
+usage: mpirun -n 4 python async_mpi.py 
+"""
+
+
 import asyncio
 import time
 import random
