@@ -341,7 +341,10 @@ def make_buys():
             # Confirm buy and place order with calculated amount
             if confirm(f'Buy ${allocation:,.2f} of {symbol}? (Weight: {row["AggValue"]/total_agg_value:.1%})'):
                 res = rb.orders.order_buy_fractional_by_price(symbol, allocation)
-                logger.info(f"Order Response for {symbol}: {res}")
+                if res is None:
+                    logger.warning(f"Order Response for {symbol}: None")
+                else:
+                    logger.info(f"Order Response for {symbol}: {res.get('state')}")
 
     # Calculate allocations based on INDEX_PCT
     etf_amount, stock_amount = calculate_allocations()
@@ -371,19 +374,18 @@ def wipe_data():
 
 def update_valuations():
     if confirm('Update Valuations ?'):
-        update_industry_valuations()
+        update_industry_valuations(verbose=False)
 
 def run_daily_strat():
     date = datetime.datetime.now()
     logger.info(f'Running Automated Investment Strategy for {date}')
     wipe_data()
-    update_industry_valuations()
+    update_industry_valuations(verbose=False)
     generate_daily_buy_list()
     aggragate_picks()
     add_funds_to_account()
     make_buys() 
     make_sales()
-
 
 
 def get_available_cash() -> float:
