@@ -2,6 +2,7 @@ import os
 import datetime
 import logging
 import pyotp
+import pandas as pd
 import robin_stocks.robinhood as rb
 from dotenv import load_dotenv
 from typing import TypedDict, Annotated, Literal
@@ -15,8 +16,11 @@ from util import (
     update_industry_valuations,
     SELLOFF_THRESHOLD,
     WEEKLY_INVESTMENT,
+    AUTO_APPROVE,
     ETFS,
     INDEX_PCT,
+    USE_SENTIMENT_ANALYSIS,
+    CONFIDENCE_THRESHOLD,
 )
 
 logging.basicConfig(
@@ -32,10 +36,9 @@ logger = logging.getLogger("investment_bot")
 load_dotenv()
 
 DATA_DIRECTORY = os.path.join("/".join(os.path.abspath(__file__).split("/")[:-2]), "data")
+
 global CASH_AVAILABLE
 
-# FEATURE FLAG: Set to True to enable LangGraph sentiment analysis
-USE_SENTIMENT_ANALYSIS = os.getenv("USE_SENTIMENT_ANALYSIS", "False").lower() == "true"
 
 # ==================== LANGGRAPH SENTIMENT ANALYSIS ====================
 
@@ -71,15 +74,52 @@ def gather_sentiments(state: SentimentAnalysisState) -> dict:
         news_data = get_news_for_tickers([symbol])
         reddit_data = reddit_sentiments_for_tickers([symbol])
         
+        # Debug prints
+        logger.debug(f"Raw news data for {symbol}: {news_data}")
+        logger.debug(f"Raw reddit data for {symbol}: {reddit_data}")
+        
+        # Check if we have any data at all
+        has_news = any(articles for articles in news_data.values() if articles)
+        has_reddit = any(sentiments for sentiments in reddit_data.values() if sentiments)
+        
+        if not has_news and not has_reddit:
+            logger.warning(f"No sentiment data available for {symbol}. Returning NO recommendation.")
+            return {
+                "analysis": "No sentiment data available",
+                "recommendation": "NO",
+                "confidence": 100.0,
+                "reasoning": "No news or social media data available for analysis."
+            }
+        
+        # Process news data to match expected format
+        processed_news = {}
+        for date, articles in news_data.items():
+            for article in articles:
+                if article.get('ticker') == symbol:
+                    if date not in processed_news:
+                        processed_news[date] = []
+                    processed_news[date].append(article)
+        
+        # Process reddit data to match expected format
+        processed_reddit = {}
+        for date, sentiments in reddit_data.items():
+            for sentiment in sentiments:
+                if sentiment.get('ticker') == symbol:
+                    if date not in processed_reddit:
+                        processed_reddit[date] = []
+                    processed_reddit[date].append(sentiment)
+        
         return {
-            "news_sentiment": news_data.get(symbol, {}),
-            "reddit_sentiment": reddit_data.get(symbol, {})
+            "news_sentiment": processed_news,
+            "reddit_sentiment": processed_reddit
         }
     except Exception as e:
         logger.error(f"Error gathering sentiments for {symbol}: {e}")
         return {
-            "news_sentiment": {},
-            "reddit_sentiment": {}
+            "analysis": f"Error: {str(e)}",
+            "recommendation": "NO",
+            "confidence": 100.0,
+            "reasoning": f"Failed to gather sentiment data: {str(e)}"
         }
 
 def analyze_sentiment(state: SentimentAnalysisState) -> dict:
@@ -266,12 +306,7 @@ def build_sentiment_workflow():
 sentiment_workflow = build_sentiment_workflow() if USE_SENTIMENT_ANALYSIS else None
 
 def get_sentiment_recommendation(symbol: str, action: Literal["buy", "sell"]) -> dict:
-    """
-    Get sentiment-based recommendation for a stock action
-    
-    Returns:
-        dict with keys: recommendation (YES/NO/NEUTRAL), confidence (0-100), reasoning (str)
-    """
+    """Get sentiment-based trading recommendation"""
     if not USE_SENTIMENT_ANALYSIS:
         logger.info("Sentiment analysis is disabled (USE_SENTIMENT_ANALYSIS=False)")
         return {
@@ -302,6 +337,15 @@ def get_sentiment_recommendation(symbol: str, action: Literal["buy", "sell"]) ->
     try:
         final_state = sentiment_workflow.invoke(initial_state)
         
+        # Check if confidence meets threshold
+        if final_state["confidence"] < CONFIDENCE_THRESHOLD:
+            logger.info(f"Confidence {final_state['confidence']}% is below threshold of {CONFIDENCE_THRESHOLD}%")
+            return {
+                "recommendation": "NEUTRAL",
+                "confidence": final_state["confidence"],
+                "reasoning": f"Confidence level {final_state['confidence']}% is below threshold of {CONFIDENCE_THRESHOLD}%"
+            }
+            
         return {
             "recommendation": final_state["recommendation"],
             "confidence": final_state["confidence"],
@@ -314,8 +358,6 @@ def get_sentiment_recommendation(symbol: str, action: Literal["buy", "sell"]) ->
             "confidence": 0.0,
             "reasoning": f"Workflow error: {str(e)}"
         }
-
-
 
 
 
@@ -379,9 +421,14 @@ def login():
             raise
 
 
-def confirm(prompt_msg:str) -> bool:
-    logger.info(f'{prompt_msg} [y/n]')
-    return True if 'y' in input().strip().lower() else False
+def confirm(prompt: str) -> bool:
+    """Get user confirmation, auto-approve if configured"""
+    if AUTO_APPROVE:
+        logger.info(f"AUTO-APPROVED: {prompt}")
+        return True
+    response = input(f"{prompt} [y/n] ").strip().lower()
+    return response in ('y', 'yes')
+
 
 
 def add_funds_to_account() -> None:
@@ -391,97 +438,89 @@ def add_funds_to_account() -> None:
         if confirm(f"Not Enough Cash Available: ${available_cash:,.2f} < ${float(WEEKLY_INVESTMENT):,.2f}\nAdd ${amount_needed:,.2f} to reach weekly investment target?"):
             bank_accounts = rb.get_linked_bank_accounts()
             ach = bank_accounts[0].get('url') 
-            resp = rb.deposit_funds_to_robinhood_account(ach, amount_needed)
+            resp = rb.deposit_funds_to_robinhood_account(ach, round(amount_needed, 2))
             logger.info(f"Deposit response: {resp}")
             logger.info(f"Request To Deposit ${amount_needed:,.2f} : {resp.get('state')}")
     else:
         logger.info(f"Not Adding Funds To Account, Enough Cash Available: {get_available_cash()} > {WEEKLY_INVESTMENT}")
 
 
-def sell(symbol:str,quantity:float):
-    holdings = rb.build_holdings()
-    assert symbol in holdings, f"Symbol {symbol} not found in portfolio holdings list"
-    return rb.order_sell_market(symbol,quantity)
+def sell(symbol: str, quantity: float):
+    if not AUTO_APPROVE and not confirm(f"Confirm sell order for {quantity} shares of {symbol}?"):
+        logger.info(f"Cancelled sell order for {symbol}")
+        return None
+    return rb.order_sell_market(symbol, quantity)
 
 
 def make_sales():
     to_sell = {
-        k:v
-        for k, v in rb.build_holdings().items()
-        if abs(float(v.get("percent_change"))) > SELLOFF_THRESHOLD and k not in ETFS
+        k: v for k, v in rb.build_holdings().items()
+        if abs(float(v.get("percent_change", 0))) > SELLOFF_THRESHOLD 
+        and k not in ETFS
     }
     
-    if to_sell:
-        for k,v in to_sell.items():
-            s,q = k, float(v.get('quantity'))
+    if not to_sell:
+        logger.info("No stocks to sell")
+        return
+        
+    for symbol, data in to_sell.items():
+        quantity = float(data.get('quantity', 0))
+        if quantity <= 0:
+            continue
             
-            # NEW: Get sentiment recommendation for selling
-            if USE_SENTIMENT_ANALYSIS:
-                logger.info(f"\n{'='*60}")
-                logger.info(f"SENTIMENT ANALYSIS FOR SELLING {s}")
-                logger.info(f"{'='*60}")
-                
-                sentiment_result = get_sentiment_recommendation(s, "sell")
-                
-                logger.info(f"Recommendation: {sentiment_result['recommendation']}")
-                logger.info(f"Confidence: {sentiment_result['confidence']:.1f}%")
-                logger.info(f"Reasoning: {sentiment_result['reasoning']}")
-                logger.info(f"{'='*60}\n")
-                
-                # Only proceed if sentiment says YES or if confidence is low (NEUTRAL)
-                if sentiment_result['recommendation'] == "NO":
-                    logger.info(f"Skipping sale of {s} based on sentiment analysis (NO recommendation)")
-                    continue
-            
-            if confirm(f"Sell {q} of {s} ?"):
-                res=sell(s,q)
-                logger.info(f'Sell order response: {res}')
+        if AUTO_APPROVE or confirm(f"Sell {quantity} of {symbol}?"):
+            res = sell(symbol, quantity)
+            logger.info(f'Sell order response for {symbol}: {res}')
     
     logger.info('Sales completed')
 
 
-def make_buys():
+def make_buys(df: pd.DataFrame):
     def calculate_allocations():
         total_cash = get_available_cash()
         etf_amount = total_cash * INDEX_PCT
         stock_amount = total_cash - etf_amount
         return etf_amount, stock_amount
 
-    def make_etf_buys(amount):
+    def make_etf_buys(amount: float):
         if amount <= 0:
             logger.info("No funds allocated to ETFs")
             return
             
-        buy_price_etf = amount / len(ETFS)
-        logger.info(f"Allocating ${amount:,.2f} to ETFs (${buy_price_etf:,.2f} per ETF)")
+        etf_count = len(ETFS)
+        if etf_count == 0:
+            logger.warning("No ETFs configured")
+            return
+            
+        per_etf = amount / etf_count
         
         for etf in ETFS:
-            if confirm(f"Buy ${buy_price_etf:,.2f} of {etf}?"):
-                res = rb.orders.order_buy_fractional_by_price(etf, buy_price_etf)
-                logger.info(f"{etf} Buy Response: {res}")
+            if AUTO_APPROVE or confirm(f'Buy ${per_etf:,.2f} of {etf}?'):
+                res = rb.orders.order_buy_fractional_by_price(etf, per_etf)
+                if res is None:
+                    logger.warning(f"Order Response for {etf}: None")
+                else:
+                    logger.info(f"Order Response for {etf}: {res.get('state')} - {res}")
 
-    def make_picked_buys(amount):
+    def make_picked_buys(amount: float):
         if amount <= 0:
             logger.info("No funds allocated to picked stocks")
             return
             
-        picks_df = aggragate_picks()
-        if picks_df.empty:
+        if df.empty:
             logger.warning("No stock picks available")
             return
             
-        total_agg_value = picks_df['AggValue'].sum()
-        if total_agg_value <= 0:
-            logger.warning("No valid aggregation values found for picks")
+        total_agg_value = df['AggValue'].sum()
+        if total_agg_value == 0:
+            logger.warning("Total aggregation value is zero, cannot allocate funds")
             return
-        
-        logger.info(f"Allocating ${amount:,.2f} to picked stocks")
-        
-        for _, row in picks_df.iterrows():
+            
+        for _, row in df.iterrows():
             symbol = row['Symbol']
             allocation = (row['AggValue'] / total_agg_value) * amount
             
-            # NEW: Get sentiment recommendation for buying
+            # Sentiment analysis check
             if USE_SENTIMENT_ANALYSIS:
                 logger.info(f"\n{'='*60}")
                 logger.info(f"SENTIMENT ANALYSIS FOR BUYING {symbol}")
@@ -499,7 +538,7 @@ def make_buys():
                     logger.info(f"Skipping purchase of {symbol} based on sentiment analysis (NO recommendation)")
                     continue
             
-            if confirm(f'Buy ${allocation:,.2f} of {symbol}? (Weight: {row["AggValue"]/total_agg_value:.1%})'):
+            if AUTO_APPROVE or confirm(f'Buy ${allocation:,.2f} of {symbol}? (Weight: {row["AggValue"]/total_agg_value:.1%})'):
                 res = rb.orders.order_buy_fractional_by_price(symbol, allocation)
                 if res is None:
                     logger.warning(f"Order Response for {symbol}: None")
@@ -509,10 +548,10 @@ def make_buys():
     etf_amount, stock_amount = calculate_allocations()
     logger.info(f"Allocation: ${etf_amount:,.2f} to ETFs ({INDEX_PCT:.0%}), ${stock_amount:,.2f} to picked stocks ({(1-INDEX_PCT):.0%})")
     
-    if etf_amount > 0 and confirm(f'Buy ETFs (${etf_amount:,.2f})?'):
+    if etf_amount > 0 and (AUTO_APPROVE or confirm(f'Buy ETFs (${etf_amount:,.2f})?')):
         make_etf_buys(etf_amount)
     
-    if stock_amount > 0 and confirm(f'Buy Picked Stocks (${stock_amount:,.2f})?'):
+    if stock_amount > 0 and (AUTO_APPROVE or confirm(f'Buy Picked Stocks (${stock_amount:,.2f})?')):
         make_picked_buys(stock_amount)
 
 
@@ -529,7 +568,7 @@ def wipe_data():
 
 
 def update_valuations():
-    update_industry_valuations(verbose=False)
+    update_industry_valuations(verbose=True)
 
 
 def run_daily_strat():
@@ -541,12 +580,21 @@ def run_daily_strat():
         logger.info("SENTIMENT ANALYSIS ENABLED")
         logger.info("="*60)
     
-    wipe_data()
-    generate_daily_undervalued_stocks()
-    update_valuations()
-    add_funds_to_account()
-    make_buys() 
-    make_sales()
+    if not AUTO_APPROVE and not confirm("Wipe data directory and generate new picks?"):
+        logger.info("Operation cancelled by user")
+        return
+    
+    try:
+        wipe_data()
+        update_valuations()
+        add_funds_to_account()
+        df = generate_daily_undervalued_stocks()
+        make_buys(df) 
+        make_sales()
+    except Exception as e:
+        logger.error(f"Error in daily strategy: {e}")
+        if not AUTO_APPROVE:
+            input("Press Enter to exit...")
 
 
 def get_available_cash() -> float:

@@ -32,6 +32,9 @@ METRIC_THRESHOLD = app_config.get('metric_threshold', 4)
 SELLOFF_THRESHOLD = app_config.get('selloff_threshold', 30)
 WEEKLY_INVESTMENT = str(app_config.get('weekly_investment', 400))
 INDEX_PCT = app_config.get('index_pct', 0.85)
+AUTO_APPROVE = app_config.get('auto_approve', False)
+USE_SENTIMENT_ANALYSIS = app_config.get('use_sentiment_analysis', False)
+CONFIDENCE_THRESHOLD = app_config.get('confidence_threshold', 70)
 ETFS = app_config.get('etfs', ['SPY', 'VOO', 'VTI', 'QQQ', 'SCHD'])
 
 

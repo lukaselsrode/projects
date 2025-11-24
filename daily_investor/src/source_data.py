@@ -183,5 +183,5 @@ def aggragate_picks():
 
 def generate_daily_undervalued_stocks():
     generate_daily_buy_list()
-    aggragate_picks()
+    return aggragate_picks()
 
