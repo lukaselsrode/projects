@@ -1,25 +1,65 @@
 # Daily Investor
 
-An automated investment strategy tool that helps identify and execute stock trades based on fundamental analysis metrics. The system evaluates stocks based on various financial ratios, sector/industry benchmarks, and market data to make informed investment decisions.
+An automated investment strategy tool that combines fundamental analysis with AI-powered sentiment analysis to make informed investment decisions. The system evaluates stocks based on financial metrics, market sentiment, and news analysis.
 
-## Features
+## 🚀 Key Features
 
-- **Automated Stock Screening**: Scans for undervalued stocks based on P/E, P/B ratios, and dividend yields
-- **Live Market Data**: Automatically updates P/E and P/B ratio benchmarks by scraping current market data from Finviz
-- **Sector/Industry Analysis**: Applies different valuation thresholds based on real-time sector and industry benchmarks
-- **Portfolio Management**: Automates buying and selling decisions with configurable parameters
+- **AI-Powered Sentiment Analysis**: Leverages LangGraph and Claude to analyze news and social media sentiment
+- **Fundamental Analysis**: Screens for undervalued stocks using P/E, P/B ratios, and dividend yields
+- **Real-time Market Data**: Automatically updates P/E and P/B ratio benchmarks
+- **Sector/Industry Analysis**: Applies different valuation thresholds based on real-time benchmarks
+- **Portfolio Management**: Automates buying and selling decisions with sentiment-based validation
 - **ETF Dollar-Cost Averaging**: Supports automated periodic investments in a set of predefined ETFs
-- **Risk Management**: Implements stop-loss and take-profit mechanisms
-- **Logging**: Comprehensive logging of all operations and decisions
-- **Valuation Updates**: Command-line tool to manually update sector/industry valuation metrics
+- **Risk Management**: Implements stop-loss, take-profit, and sentiment-based trade validation
+- **Comprehensive Logging**: Detailed logging of all operations, decisions, and sentiment analysis
 
-## Prerequisites
+## 🏗️ Project Structure
+
+```
+daily_investor/
+├── src/
+│   ├── main.py              # Main application entry point
+│   ├── sentiments.py        # Sentiment analysis module
+│   ├── source_data.py       # Data collection and processing
+│   └── util.py             # Utility functions and configurations
+├── data/                   # Data storage directory
+├── .env                    # Environment variables
+└── requirements.txt        # Python dependencies
+```
+
+## 🤖 Sentiment Analysis with LangGraph
+
+The system now includes advanced sentiment analysis using LangGraph and Claude:
+
+- **Multi-source Analysis**: Combines news and Reddit sentiment
+- **Workflow-based Processing**: Uses LangGraph for structured sentiment analysis
+- **Confidence Scoring**: Provides confidence levels for each recommendation
+- **Explainable AI**: Includes reasoning behind each recommendation
+
+### Sentiment Analysis Workflow
+
+1. **Data Collection**:
+   - News articles from yfinance
+   - Reddit sentiment data
+
+2. **Analysis**:
+   - Sentiment scoring
+   - Source credibility assessment
+   - Trend analysis
+
+3. **Decision Making**:
+   - Buy/sell recommendations
+   - Confidence scoring
+   - Detailed reasoning
+
+## 🛠️ Prerequisites
 
 - Python 3.7+
 - Robinhood account (for trading)
-- Required API keys and credentials
+- Anthropic API key (for sentiment analysis)
+- Required Python packages (see requirements.txt)
 
-## Installation
+## 🚀 Installation
 
 1. Clone the repository:
    ```bash
@@ -32,19 +72,27 @@ An automated investment strategy tool that helps identify and execute stock trad
    pip install -r requirements.txt
    ```
 
-3. Set up environment variables (see Configuration section below)
+3. Set up environment variables in `.env`:
+   ```
+   RB_ACCT=your_robinhood_email
+   RB_CREDS=your_robinhood_password
+   ANTHROPIC_API_KEY=your_anthropic_api_key  # Required for sentiment analysis
+   ```
 
-## Configuration
+## ⚙️ Configuration
 
-### Environment Variables
+### Enable/Disable Sentiment Analysis
 
-Create a `.env` file in the project root with the following variables:
-
+In `main.py`, set:
+```python
+USE_SENTIMENT_ANALYSIS = os.getenv("USE_SENTIMENT_ANALYSIS", "False").lower() == "true"
 ```
-RB_ACCT=your_robinhood_email
-RB_CREDS=your_robinhood_password
-RB_MFA_SECRET=your_mfa_secret  # Optional, for automated MFA
-```
+
+### Sentiment Analysis Parameters
+
+Adjust in `sentiments.py`:
+- `max_articles`: Number of news articles to analyze per ticker
+- Confidence thresholds for trade execution
 
 ### Application Configuration (`investments.yaml`)
 
@@ -104,7 +152,7 @@ python -c "from util import update_industry_valuations; update_industry_valuatio
 Or use the included command in the investment interface:
 
 ```bash
-python src/investments.py
+python src/main.py
 # Then choose 'Update Valuations' from the menu
 ```
 
@@ -125,7 +173,7 @@ Custom values will be preserved during automatic updates, allowing you to mainta
 ### Running the Strategy
 
 ```bash
-python src/investments.py
+python src/main.py
 ```
 
 ### Main Components
@@ -138,7 +186,7 @@ python src/investments.py
 
 ### Supported Commands
 
-- Run the full strategy: `python src/investments.py`
+- Run the full strategy: `python src/main.py`
 - Generate buy list: `generate_daily_buy_list()`
 - Execute buys: `make_buys()`
 - Execute sales: `make_sales()`
@@ -149,10 +197,10 @@ python src/investments.py
 
 The investment strategy focuses on:
 
-1. **Value Investing**: Identifies stocks trading below their intrinsic value using P/E and P/B ratios
-2. **Sector Rotation**: Adjusts valuation thresholds based on sector/industry benchmarks
-3. **Diversification**: Spreads investments across sectors and asset classes
-4. **Risk Management**: Implements stop-loss and position sizing rules
+1. **Value Investing**: Identifies stocks trading below intrinsic value
+2. **Sentiment Analysis**: Validates trades using AI-powered sentiment
+3. **Sector Rotation**: Adjusts based on sector/industry benchmarks
+4. **Risk Management**: Implements stop-loss and position sizing
 
 ## Logging
 

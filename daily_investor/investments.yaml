@@ -5,7 +5,7 @@ config:
   metric_threshold: 5
   selloff_threshold: 30
   weekly_investment: 400
-  index_pct: 0.05
+  index_pct: 0.8
   etfs:
   - SPY
   - VOO
@@ -20,17 +20,17 @@ Consumer Services:
   - 20
   - 5.5
   Broadcasting:
-  - 11.41
-  - 1.69
+  - 13.64
+  - 1.49
   Casinos:
   - 18
   - 11
   Entertainment:
-  - 41.33
-  - 4.23
+  - 37.93
+  - 4.35
   Restaurants:
-  - 30.08
-  - 22.7
+  - 28.92
+  - 21.23
   Resorts:
   - 15
   - 11
@@ -45,15 +45,15 @@ Technology Services:
   - 37
   - 9
   Information Technology Services:
-  - 26.2
-  - 4.35
+  - 24.45
+  - 4.32
 Retail Trade:
   default:
   - 28.79
   - 4
   Discount Stores:
-  - 37.71
-  - 9.23
+  - 36.53
+  - 8.84
   Specialty Stores:
   - null
   - 7.4
@@ -77,8 +77,8 @@ Health Technology:
   - 80
   - 5.2
   Biotechnology:
-  - 51.87
-  - 4.09
+  - 59.35
+  - 4.89
   Medical:
   - 35
   - 5.12
@@ -94,8 +94,8 @@ Electronic Technology:
   - 40
   - 6
   Semiconductors:
-  - 50.05
-  - 11.69
+  - 47.15
+  - 12.07
   Telecommunications Equipment:
   - 48
   - 5.14
