@@ -23,17 +23,17 @@ Consumer Services:
   - 20
   - 5.5
   Broadcasting:
-  - 13.88
+  - 13.9
   - 1.52
   Casinos:
   - 18
   - 11
   Entertainment:
-  - 37.87
+  - 37.88
   - 4.34
   Restaurants:
-  - 28.94
-  - 21.24
+  - 28.96
+  - 21.26
   Resorts:
   - 15
   - 11
@@ -48,7 +48,7 @@ Technology Services:
   - 37
   - 9
   Information Technology Services:
-  - 24.56
+  - 24.57
   - 4.34
 Retail Trade:
   default:
@@ -80,8 +80,8 @@ Health Technology:
   - 80
   - 5.2
   Biotechnology:
-  - 58.98
-  - 4.86
+  - 58.86
+  - 4.85
   Medical:
   - 35
   - 5.12
@@ -97,7 +97,7 @@ Electronic Technology:
   - 40
   - 6
   Semiconductors:
-  - 47.2
+  - 47.21
   - 12.09
   Telecommunications Equipment:
   - 48
