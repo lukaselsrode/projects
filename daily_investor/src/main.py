@@ -67,60 +67,87 @@ sentiment_model = initialize_sentiment_model() if USE_SENTIMENT_ANALYSIS else No
 def gather_sentiments(state: SentimentAnalysisState) -> dict:
     """Gather sentiment data from news and reddit"""
     symbol = state["symbol"]
-    
     logger.info(f"Gathering sentiments for {symbol}...")
     
+    # Initialize default return value
+    result = {
+        "news_sentiment": {},
+        "reddit_sentiment": {},
+        "analysis": "",
+        "recommendation": "NEUTRAL",
+        "confidence": 0.0,
+        "reasoning": ""
+    }
+    
     try:
-        news_data = get_news_for_tickers([symbol])
-        reddit_data = reddit_sentiments_for_tickers([symbol])
+        # Get news data
+        try:
+            news_data = get_news_for_tickers([symbol]) or {}
+            logger.debug(f"Raw news data for {symbol}: {news_data}")
+        except Exception as e:
+            logger.error(f"Error fetching news for {symbol}: {e}")
+            news_data = {}
         
-        # Debug prints
-        logger.debug(f"Raw news data for {symbol}: {news_data}")
-        logger.debug(f"Raw reddit data for {symbol}: {reddit_data}")
+        # Get Reddit data with error handling
+        try:
+            reddit_data = reddit_sentiments_for_tickers([symbol]) or {}
+            logger.debug(f"Raw reddit data for {symbol}: {reddit_data}")
+        except Exception as e:
+            logger.error(f"Error fetching Reddit data for {symbol}: {e}")
+            reddit_data = {}
         
-        # Check if we have any data at all
-        has_news = any(articles for articles in news_data.values() if articles)
-        has_reddit = any(sentiments for sentiments in reddit_data.values() if sentiments)
+        # Check if we have any valid data
+        has_news = bool(news_data) and any(articles for articles in news_data.values() if articles)
+        has_reddit = bool(reddit_data) and any(sentiments for sentiments in reddit_data.values() if sentiments)
         
         if not has_news and not has_reddit:
-            logger.warning(f"No sentiment data available for {symbol}. Returning NO recommendation.")
-            return {
-                "analysis": "No sentiment data available",
-                "recommendation": "NO",
-                "confidence": 100.0,
-                "reasoning": "No news or social media data available for analysis."
-            }
+            logger.warning(f"No valid sentiment data available for {symbol}")
+            result.update({
+                "recommendation": "NEUTRAL",
+                "confidence": 0.0,
+                "reasoning": "No valid news or social media data available for analysis."
+            })
+            return result
         
-        # Process news data to match expected format
+        # Process news data if available
         processed_news = {}
-        for date, articles in news_data.items():
-            for article in articles:
-                if article.get('ticker') == symbol:
-                    if date not in processed_news:
-                        processed_news[date] = []
-                    processed_news[date].append(article)
+        if has_news:
+            for date, articles in news_data.items():
+                if not articles:
+                    continue
+                for article in articles:
+                    if article and article.get('ticker') == symbol:
+                        if date not in processed_news:
+                            processed_news[date] = []
+                        processed_news[date].append(article)
         
-        # Process reddit data to match expected format
+        # Process Reddit data if available
         processed_reddit = {}
-        for date, sentiments in reddit_data.items():
-            for sentiment in sentiments:
-                if sentiment.get('ticker') == symbol:
-                    if date not in processed_reddit:
-                        processed_reddit[date] = []
-                    processed_reddit[date].append(sentiment)
+        if has_reddit:
+            for date, sentiments in reddit_data.items():
+                if not sentiments:
+                    continue
+                for sentiment in sentiments:
+                    if sentiment and sentiment.get('ticker') == symbol:
+                        if date not in processed_reddit:
+                            processed_reddit[date] = []
+                        processed_reddit[date].append(sentiment)
         
-        return {
+        result.update({
             "news_sentiment": processed_news,
             "reddit_sentiment": processed_reddit
-        }
+        })
+        
     except Exception as e:
-        logger.error(f"Error gathering sentiments for {symbol}: {e}")
-        return {
-            "analysis": f"Error: {str(e)}",
-            "recommendation": "NO",
-            "confidence": 100.0,
-            "reasoning": f"Failed to gather sentiment data: {str(e)}"
-        }
+        logger.error(f"Unexpected error in gather_sentiments for {symbol}: {e}")
+        result.update({
+            "recommendation": "NEUTRAL",
+            "confidence": 0.0,
+            "reasoning": f"Error processing sentiment data: {str(e)}"
+        })
+    
+    return result
+
 
 def analyze_sentiment(state: SentimentAnalysisState) -> dict:
     """Use Claude to analyze sentiment and provide recommendation"""

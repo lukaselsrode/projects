@@ -6,7 +6,7 @@ config:
   selloff_threshold: 30
   weekly_investment: 400
   index_pct: 0.8
-  auto_approve: true
+  auto_approve: false
   use_sentiment_analysis: true
   confidence_threshold: 70
   etfs:
