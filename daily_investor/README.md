@@ -1,72 +1,77 @@
 # Daily Investor
 
-An automated investment strategy tool that combines fundamental analysis with AI-powered sentiment analysis to make informed investment decisions. The system evaluates stocks based on financial metrics, market sentiment, and news analysis.
+An automated investment strategy tool that combines fundamental analysis with AI-powered sentiment analysis to make informed investment decisions. The system evaluates stocks based on financial metrics, market sentiment, and news analysis, then executes trades via Robinhood.
 
 ## 🚀 Key Features
 
-- **AI-Powered Sentiment Analysis**: Leverages LangGraph and Claude to analyze news and social media sentiment
-- **Confidence-Based Trading**: Implements confidence thresholds to ensure high-quality trade decisions
+- **Batch AI Sentiment Analysis**: Analyzes multiple stocks per Claude API call using async concurrency — reduces analysis time from hours to minutes
+- **Pre-filtering by Value Metric**: Only stocks above `metric_threshold` are sent for sentiment analysis, eliminating wasted API calls
+- **Async + Exponential Backoff**: Concurrent Claude calls with automatic retry on rate limits
+- **Fractional + Whole Share Fallback**: Attempts fractional orders first; falls back to a whole-share market order if fractional is unavailable
+- **Live Cash Tracking**: Re-fetches real available cash before every order to prevent overspending from stale balances
+- **Smart Sell Logic**: Only sells on significant price swings (`selloff_threshold`); sentiment used as a hold-check, not a proactive sweep
 - **Auto-Approval System**: Option to automatically execute trades that meet confidence criteria
-- **Flexible Operation Modes**: Run in fully automated, semi-automated, or manual confirmation modes
 - **Fundamental Analysis**: Screens for undervalued stocks using P/E, P/B ratios, and dividend yields
-- **Real-time Market Data**: Automatically updates P/E and P/B ratio benchmarks
+- **Real-time Market Data**: Automatically updates P/E and P/B ratio benchmarks via Finviz
 - **Sector/Industry Analysis**: Applies different valuation thresholds based on real-time benchmarks
-- **Portfolio Management**: Automates buying and selling decisions with sentiment-based validation
-- **ETF Dollar-Cost Averaging**: Supports automated periodic investments in a set of predefined ETFs
-- **Risk Management**: Implements stop-loss, take-profit, and sentiment-based trade validation
-- **Comprehensive Logging**: Detailed logging of all operations, decisions, and sentiment analysis
+- **ETF Dollar-Cost Averaging**: Automated periodic investments in a configurable set of ETFs
+- **Comprehensive Logging**: Full stack traces on errors, per-decision reasoning, and cash accounting at every step
 
 ## 🏗️ Project Structure
 
 ```
 daily_investor/
 ├── src/
-│   ├── main.py              # Main application entry point
-│   ├── sentiments.py        # Sentiment analysis module
-│   ├── source_data.py       # Data collection and processing
-│   └── util.py             # Utility functions and configurations
-├── data/                   # Data storage directory
-├── .env                    # Environment variables
-└── requirements.txt        # Python dependencies
+│   ├── main.py                # Main application entry point
+│   ├── sentiment_analysis.py  # Batch + async Claude sentiment analysis
+│   ├── sentiments.py          # News/Reddit data collection
+│   ├── source_data.py         # Data collection and processing
+│   └── util.py                # Utility functions and configurations
+├── data/                      # Data storage directory (CSV cache)
+├── .env                       # Environment variables
+└── requirements.txt           # Python dependencies
 ```
 
-## 🤖 Sentiment Analysis with LangGraph
+## 🤖 Sentiment Analysis Architecture
 
-The system includes advanced sentiment analysis using LangGraph and Claude:
+Sentiment analysis uses a two-path design:
 
-- **Multi-source Analysis**: Combines news and Reddit sentiment
-- **Workflow-based Processing**: Uses LangGraph for structured sentiment analysis
-- **Confidence Scoring**: Provides confidence levels for each recommendation
-- **Explainable AI**: Includes reasoning behind each recommendation
-- **Configurable Thresholds**: Set minimum confidence levels for trade execution
-- **Auto-Approval**: Optional automatic execution of high-confidence trades
+### Buy Path — Batch Async
+All buy candidates are analyzed in a single async round-trip:
+1. Pre-filter candidates by `metric_threshold` (eliminates stocks with no valuation signal)
+2. Build batches of `BATCH_SIZE` stocks (default: 6) from cached CSV data
+3. Dispatch all batches concurrently via `asyncio.gather()` with a `Semaphore(MAX_CONCURRENT=5)`
+4. Exponential backoff (`2^attempt × (1 + jitter)`) on 429s and transient errors
+5. Parse per-symbol results from Claude's structured response and execute orders
 
-### Sentiment Analysis Workflow
+### Sell Path — Batch Async (Hold-Check Only)
+Selling is purely reactive to price swings:
+1. Scan all holdings for `abs(percent_change) > selloff_threshold` — zero API calls
+2. If any candidates found, batch them in one async Claude call as a hold-check
+3. If Claude recommends YES (hold) with sufficient confidence → keep the position
+4. Otherwise → execute sell order
 
-1. **Data Collection**:
-   - News articles from yfinance
-   - Reddit sentiment data
-   - Market sentiment indicators
+No proactive sentiment sweeps of all holdings. If nothing breaches the threshold, sales analysis exits immediately.
 
-2. **Analysis**:
-   - Sentiment scoring
-   - Source credibility assessment
-   - Trend analysis
-   - Confidence calculation
+### LangGraph Single-Stock Path (Internal)
+Used only when the batch path is unavailable. Includes a short-circuit router: if `gather_sentiments` determines there is no valid data (stock not in aggregated data, no news), it sets `skip_analysis=True` and the workflow jumps directly to `END` without calling Claude.
 
-3. **Decision Making**:
-   - Buy/sell recommendations
-   - Confidence scoring (0-100%)
-   - Detailed reasoning for each recommendation
-   - Auto-approval for high-confidence trades (configurable threshold)
-   - Manual review for borderline cases
+### Workflow Diagram
+
+```
+gather_sentiments
+      │
+      ├─ skip_analysis=True ──────────────→ END (no Claude call)
+      │
+      └─ skip_analysis=False → analyze_sentiment → END
+```
 
 ## 🛠️ Prerequisites
 
-- Python 3.7+
-- Robinhood account (for trading)
+- Python 3.10+
+- Robinhood account
 - Anthropic API key (for sentiment analysis)
-- Required Python packages (see requirements.txt)
+- Required Python packages (see `requirements.txt`)
 
 ## 🚀 Installation
 
@@ -85,69 +90,35 @@ The system includes advanced sentiment analysis using LangGraph and Claude:
    ```
    RB_ACCT=your_robinhood_email
    RB_CREDS=your_robinhood_password
-   ANTHROPIC_API_KEY=your_anthropic_api_key  # Required for sentiment analysis
+   RB_MFA_SECRET=your_totp_secret        # Optional: skip MFA prompt
+   ANTHROPIC_API_KEY=your_anthropic_key  # Required for sentiment analysis
    ```
 
 ## ⚙️ Configuration
 
-### Running Modes
+All settings live in `investments.yaml`.
 
-The system supports three main operating modes that can be configured in `investments.yaml`:
-
-1. **Safe Mode (Recommended for New Users)**
-   ```yaml
-   auto_approve: false
-   use_sentiment_analysis: true
-   confidence_threshold: 70
-   ```
-   - Requires manual confirmation for all trades
-   - Shows sentiment analysis results before each trade
-   - Best for learning and validation
-
-2. **Automated Mode (Confidence-Based)**
-   ```yaml
-   auto_approve: true
-   use_sentiment_analysis: true
-   confidence_threshold: 80
-   ```
-   - Automatically executes high-confidence trades (≥80% confidence)
-   - Requires manual review for lower confidence trades
-   - Balances automation with oversight
-
-3. **Fully Automated Mode**
-   ```yaml
-   auto_approve: true
-   use_sentiment_analysis: true
-   confidence_threshold: 0  # Accepts all confidence levels
-   ```
-   - Fully automated trading
-   - No manual intervention required
-   - Use with caution - only recommended for experienced users
-
-### Main Configuration (investments.yaml)
-
-The `investments.yaml` file contains all application configurations and sector/industry specific parameters:
+### Main Configuration
 
 ```yaml
 config:
-  # Basic Settings
-  ignore_negative_pe: false    # Ignore stocks with negative P/E ratios
-  ignore_negative_pb: false    # Ignore stocks with negative P/B ratios
-  dividend_threshold: 3        # Minimum dividend yield percentage
-  metric_threshold: 5          # Minimum number of metrics to consider
-  auto_approve: false          # Auto-confirm trades without manual approval
-  use_sentiment_analysis: true # Enable/disable AI sentiment analysis
-  confidence_threshold: 70     # Minimum confidence percentage (0-100) required for trade execution
-  selloff_threshold: 30        # Percentage drop to trigger sell analysis
-  weekly_investment: 400       # Weekly investment amount in USD
-  index_pct: 0.8               # Percentage of funds to allocate to ETFs (vs individual stocks)
-  
-  # Sentiment Analysis
-  use_sentiment_analysis: true # Enable/disable sentiment analysis
-  confidence_threshold: 70     # Minimum confidence percentage required for trade execution
-  auto_approve: false          # Automatically approve trades without confirmation
-  
-  # ETF Configuration
+  # Fundamental screening
+  ignore_negative_pe: false    # Skip stocks with negative P/E
+  ignore_negative_pb: false    # Skip stocks with negative P/B
+  dividend_threshold: 3        # Minimum dividend yield %
+  metric_threshold: 5          # Minimum value_metric score to pass pre-filter
+  selloff_threshold: 30        # % price swing that triggers sell analysis
+
+  # Capital allocation
+  weekly_investment: 400       # Weekly investment amount (USD)
+  index_pct: 0.8               # Fraction of funds allocated to ETFs
+
+  # Sentiment analysis
+  use_sentiment_analysis: true
+  confidence_threshold: 70     # Minimum confidence % to execute a trade
+  auto_approve: false          # Auto-confirm trades without manual prompts
+
+  # ETFs for dollar-cost averaging
   etfs:
     - SPY
     - VOO
@@ -156,265 +127,80 @@ config:
     - SCHD
 ```
 
-### Sentiment Analysis Features
+### Operating Modes
 
-The sentiment analysis system includes several powerful features:
+| Mode | `auto_approve` | `use_sentiment_analysis` | `confidence_threshold` | Notes |
+|------|---------------|--------------------------|------------------------|-------|
+| Safe | `false` | `true` | `70` | Manual confirmation, sentiment shown before each trade |
+| Automated | `true` | `true` | `80` | Executes high-confidence trades automatically |
+| Fully Automated | `true` | `true` | `0` | No manual intervention — use with caution |
+| Manual | `false` | `false` | n/a | No sentiment, buy by value metric weight only |
 
-- **Confidence Threshold**: 
-  - Only executes trades when the sentiment analysis confidence is above the specified threshold (default: 70%)
-  - Helps prevent low-confidence trades from being executed
-  - Configurable in `investments.yaml`
+### Valuation Scores Explained
 
-- **Auto-Approval**:
-  - When enabled (`auto_approve: true`), the system will automatically execute trades without manual confirmation
-  - When disabled, you'll be prompted to confirm each trade
-  - Recommended to keep disabled during testing
+The `value_metric` score drives both pre-filtering and portfolio weighting:
 
-- **Multi-source Analysis**:
-  - Combines news articles and Reddit sentiment
-  - Analyzes both positive and negative sentiment indicators
-  - Considers source credibility and recency
+| Component | Formula | When scored |
+|-----------|---------|-------------|
+| `pe_comp` | `sector_PE / actual_PE` | Only if `actual_PE < sector_PE` |
+| `pb_comp` | `sector_PB / actual_PB` | Only if `actual_PB < sector_PB` |
+| `div_comp` | `dividend_yield / 3.0` | Only if `yield > 3%` |
+| `value_metric` | `pe_comp + pb_comp + div_comp` | Sum of above |
 
-### Enabling/Disabling Features
-
-You can enable or disable features by modifying the `investments.yaml` file:
-
-```yaml
-# Enable auto-approval of trades (use with caution)
-auto_approve: false
-
-# Enable/disable sentiment analysis
-use_sentiment_analysis: true
-
-# Adjust confidence threshold (0-100)
-confidence_threshold: 70
-```
-
-### Environment Variables
-
-Set these in your `.env` file:
-
-```
-RB_ACCT=your_robinhood_email
-RB_CREDS=your_robinhood_password
-ANTHROPIC_API_KEY=your_anthropic_api_key  # Required for sentiment analysis
-USE_SENTIMENT_ANALYSIS=true              # Optional: Override YAML setting
-```
-
-### Running with Different Configurations
-
-1. **Safe Mode (Recommended for Initial Setup)**:
-   ```yaml
-   # Disable auto-approve and enable confirmation prompts
-   auto_approve: false
-   use_sentiment_analysis: true
-   confidence_threshold: 70
-   ```
-
-2. **Automated Mode (For Experienced Users)**:
-   ```yaml
-   # Enable auto-approve for fully automated trading
-   auto_approve: true
-   use_sentiment_analysis: true
-   confidence_threshold: 75  # Higher threshold for automated trading
-   ```
-
-3. **Manual Mode**:
-   ```yaml
-   # Disable sentiment analysis completely
-   use_sentiment_analysis: false
-   ```
+- `value_metric = 0` → stock is not undervalued on any metric
+- `value_metric ≥ 2` → undervalued on at least two metrics (strong case)
+- Set `metric_threshold` in config to control the minimum score for consideration
 
 ## 🏃‍♂️ Running the Application
 
-1. First, ensure your `.env` file is properly configured
-2. Run the main script:
-   ```bash
-   python src/main.py
-   ```
+```bash
+# Full run: refresh data, fetch news, analyze, trade
+python src/main.py
 
-3. The system will:
-   - Log in to your Robinhood account
-   - Check available funds
-   - Analyze market conditions
-   - Present trading opportunities
-   - Execute trades based on your configuration
+# Skip data generation — reuse today's cached CSVs (much faster)
+python src/main.py --skip-data
 
-## �️ Sample Output
-
-Here's an example of the system in action, showing the sentiment analysis and trade decision process:
-
-```
-2025-11-24 13:28:23,138 - investment_bot - INFO - Allocation: $320.00 to ETFs (80%), $80.00 to picked stocks (20%)
-
-=== Sentiment Analysis for BABA ===
-2025-11-24 13:28:44,255 - investment_bot - INFO - Recommendation: YES
-2025-11-24 13:28:44,255 - investment_bot - INFO - Confidence: 75.0%
-2025-11-24 13:28:44,255 - investment_bot - INFO - Reasoning: The sentiment is strongly positive with Alibaba's Qwen AI app achieving impressive 10+ million downloads...
-
-=== Sentiment Analysis for WB ===
-2025-11-24 13:29:18,066 - investment_bot - INFO - Recommendation: NO
-2025-11-24 13:29:18,066 - investment_bot - INFO - Confidence: 75.0%
-2025-11-24 13:29:18,066 - investment_bot - INFO - Reasoning: The sentiment data shows mixed to negative signals with WB experiencing a 14.2% decline...
-2025-11-24 13:29:18,066 - investment_bot - INFO - Skipping purchase of WB based on sentiment analysis (NO recommendation)
-
-=== Sentiment Analysis for FSLR ===
-2025-11-24 13:29:23,765 - investment_bot - INFO - Confidence 65.0% is below threshold of 70%
-2025-11-24 13:29:23,765 - investment_bot - INFO - Recommendation: NEUTRAL
-
-=== Sentiment Analysis for MRK ===
-2025-11-24 13:29:49,733 - investment_bot - INFO - Recommendation: YES
-2025-11-24 13:29:49,733 - investment_bot - INFO - Confidence: 75.0%
-2025-11-24 13:29:49,733 - investment_bot - INFO - Reasoning: The sentiment is strongly positive with multiple bullish catalysts...
-2025-11-24 13:30:05,268 - investment_bot - INFO - Order Response for MRK: unconfirmed
+# Help
+python src/main.py --help
 ```
 
-This output shows:
-1. The system allocating funds between ETFs and individual stocks
-2. Sentiment analysis being performed for each potential stock purchase
-3. Clear recommendations (YES/NO/NEUTRAL) with confidence levels
-4. Reasoning behind each recommendation
-5. Automatic skipping of stocks with negative sentiment
-6. Successful order placement for approved trades
+The strategy runs in a loop (up to `max_iterations=10`), re-evaluating remaining candidates each iteration. Stocks that were skipped, failed, or already bought are permanently excluded from subsequent iterations.
 
-## ❓ Troubleshooting and Logs
+## 📊 Performance
 
-- All actions are logged to `investment_bot.log`
-- Detailed trade rationales are provided for each recommendation
-- Sentiment analysis results include confidence scores and reasoning
-- Check logs for any API errors or connection issues
-- Verify your Robinhood and API credentials if authentication fails
+| Before | After |
+|--------|-------|
+| ~1 API call per stock, sequential | Batch of 6 stocks per call, all batches concurrent |
+| `time.sleep(1)` per stock + `sleep(3)` every 5 | No sleeps in analysis; 0.5s between order placements only |
+| 2400 stocks × ~6s = ~4 hours | Pre-filter to ~10–50 stocks, batch async = ~2–5 minutes |
 
-## 🤝 Contributing
+## 🔍 Troubleshooting
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+**All stocks show "Batch error / NEUTRAL"**
+The async Claude call failed silently. Check `investment_bot.log` — errors now log full stack traces (`exc_info=True`). Common causes: missing `ANTHROPIC_API_KEY`, network issue, or Python < 3.10 event loop incompatibility.
+
+**"Fractional order unavailable, retrying as market order"**
+Some tickers (often foreign ADRs or lower-liquidity stocks) don't support fractional shares on Robinhood. The bot automatically retries with `order_buy_market(symbol, 1)` for 1 whole share.
+
+**"Cash exhausted" stops buys early**
+Available cash is re-fetched from Robinhood before every order (accounting for all pending/queued orders). If the balance drops below $1 after ETF allocation, the buy loop exits. This is correct behaviour — it prevents overspending when many orders are queued.
+
+**Robinhood 429 errors on orders**
+A 0.5s sleep between successful order placements is enforced to stay within Robinhood's order rate limit. If 429s persist, increase this value in `make_buys()`.
+
+**Stock not found in aggregated data**
+If a stock appears in the buy candidates but not in `agg_data_*.csv`, it gets a warning and `skip_analysis=True` in the LangGraph workflow — no Claude call is made, and it is skipped. Re-run data generation with `generate_fresh=True` to rebuild the aggregated data file.
+
+## 🔒 Security
+
+- Never commit `.env` or any file containing credentials to version control
+- `.env` is `.gitignore`d by default
+- All sensitive values (API keys, passwords) are read from environment variables at runtime
+
+## ⚠️ Disclaimer
+
+This software is for educational purposes only. Use at your own risk. The authors are not responsible for any financial losses incurred while using this tool. Always conduct your own research and consider consulting with a licensed financial advisor before making investment decisions.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
-
-#### Global Configuration
-
-```yaml
-config:
-  # Ignore negative P/E ratios in calculations
-  ignore_negative_pe: false
-  
-  # Ignore negative P/B ratios in calculations
-  ignore_negative_pb: false
-  
-  # Minimum dividend yield percentage to consider
-  dividend_threshold: 2.5
-  
-  # Minimum value metric threshold for stock selection
-  metric_threshold: 4
-  
-  # Percentage change threshold to trigger sell orders
-  selloff_threshold: 30
-  
-  # Weekly investment amount in dollars
-  weekly_investment: 400
-  
-  # List of ETFs for dollar-cost averaging
-  etfs:
-    - SPY
-    - VOO
-    - VTI
-    - QQQ
-    - SCHD
-```
-
-#### Sector/Industry Configuration
-
-Below the global config, you'll find sector-specific P/E and P/B ratio thresholds. Each sector can have a default and industry-specific overrides:
-
-```yaml
-# Example sector configuration
-Technology Services:
-  default: [40, 6]  # [P/E ratio, P/B ratio]
-  Software: [37, 9]
-  Information Technology Services: [33.6, 4]
-```
-
-#### Automatic Valuation Updates
-
-The system can automatically update sector and industry valuation metrics using live market data from Finviz. To update the valuations:
-
-```bash
-python -c "from util import update_industry_valuations; update_industry_valuations()"
-```
-
-Or use the included command in the investment interface:
-
-```bash
-python src/main.py
-# Then choose 'Update Valuations' from the menu
-```
-
-The update process will:
-1. Fetch current P/E and P/B ratios for all sectors and industries from Finviz
-2. Update the `investments.yaml` file with the latest metrics
-3. Preserve any custom thresholds you've set
-4. Show a detailed report of all changes made
-
-#### Manual Overrides
-
-To set custom valuation criteria for a specific industry, add or update its entry under the appropriate sector. The first number represents the P/E ratio threshold, and the second number represents the P/B ratio threshold. Use `null` to ignore a particular metric for an industry.
-
-Custom values will be preserved during automatic updates, allowing you to maintain manual control over specific sectors or industries while still benefiting from automatic updates for others.
-
-## Usage
-
-### Running the Strategy
-
-```bash
-python src/main.py
-```
-
-### Main Components
-
-- **generate_daily_buy_list()**: Fetches and analyzes stock data to identify undervalued opportunities
-- **make_buys()**: Handles the execution of buy orders for both individual stocks and ETFs
-- **make_sales()**: Manages sell orders based on predefined criteria
-- **get_available_cash()**: Calculates available cash, accounting for pending orders
-- **update_valuations()**: Updates sector/industry P/E and P/B ratios using current market data
-
-### Supported Commands
-
-- Run the full strategy: `python src/main.py`
-- Generate buy list: `generate_daily_buy_list()`
-- Execute buys: `make_buys()`
-- Execute sales: `make_sales()`
-- Check available cash: `get_available_cash()`
-- Update valuations: `update_valuations()`
-
-## Strategy Details
-
-The investment strategy focuses on:
-
-1. **Value Investing**: Identifies stocks trading below intrinsic value
-2. **Sentiment Analysis**: Validates trades using AI-powered sentiment
-3. **Sector Rotation**: Adjusts based on sector/industry benchmarks
-4. **Risk Management**: Implements stop-loss and position sizing
-
-## Logging
-
-All activities are logged to `investment_bot.log` in the project root directory.
-
-## Security
-
-- **Never commit sensitive data** (API keys, credentials) to version control
-- Use environment variables for sensitive information
-- The `.env` file is included in `.gitignore` by default
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Disclaimer
-
-This software is for educational purposes only. Use at your own risk. The authors are not responsible for any financial losses incurred while using this tool. Always conduct your own research and consider consulting with a licensed financial advisor before making investment decisions.
+MIT License — see [LICENSE](LICENSE) for details.
