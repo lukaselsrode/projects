@@ -2,38 +2,40 @@ config:
   ignore_negative_pe: false
   ignore_negative_pb: false
   dividend_threshold: 3
-  metric_threshold: 5
+  metric_threshold: 4
   selloff_threshold: 30
   weekly_investment: 400
-  index_pct: 0.8
-  auto_approve: false
+  index_pct: 0.01
+  auto_approve: true
   use_sentiment_analysis: true
-  confidence_threshold: 70
+  confidence_threshold: 50
   etfs:
   - SPY
   - VOO
   - VTI
   - QQQ
   - SCHD
+  - MPLY
+  - SMH
 Consumer Services:
   default:
-  - 6
-  - 1.9
+  - 31.35
+  - 4.7
   Other Consumer Services:
   - 20
   - 5.5
   Broadcasting:
-  - 13.9
-  - 1.52
+  - 53.01
+  - 2.05
   Casinos:
   - 18
   - 11
   Entertainment:
-  - 37.88
-  - 4.34
+  - 30.24
+  - 3.75
   Restaurants:
-  - 28.96
-  - 21.26
+  - 30.61
+  - 22.12
   Resorts:
   - 15
   - 11
@@ -42,21 +44,21 @@ Consumer Services:
   - null
 Technology Services:
   default:
-  - 40
-  - 6
+  - 36.88
+  - 10.3
   Software:
   - 37
   - 9
   Information Technology Services:
-  - 24.57
-  - 4.34
+  - 17.45
+  - 3.27
 Retail Trade:
   default:
-  - 28.79
-  - 4
+  - 31.35
+  - 4.7
   Discount Stores:
-  - 36.44
-  - 8.81
+  - 42.24
+  - 9.61
   Specialty Stores:
   - null
   - 7.4
@@ -74,31 +76,31 @@ Retail Trade:
   - 2.92
 Health Technology:
   default:
-  - 34.17
-  - 5.5
+  - 27.9
+  - 4.28
   Pharmaceuticals:
   - 80
   - 5.2
   Biotechnology:
-  - 58.86
-  - 4.85
+  - 55.59
+  - 4.7
   Medical:
   - 35
   - 5.12
 Communications:
   default:
-  - 24
-  - 1.6
+  - 39.76
+  - 7.93
   Wireless Telecommunications:
   - 36
   - 5
 Electronic Technology:
   default:
-  - 40
-  - 6
+  - 36.88
+  - 10.3
   Semiconductors:
-  - 47.21
-  - 12.09
+  - 47.16
+  - 14.07
   Telecommunications Equipment:
   - 48
   - 5.14
@@ -119,12 +121,12 @@ Electronic Technology:
   - 5.08
 Consumer Durables:
   default:
-  - 6
-  - 4
+  - 31.35
+  - 4.7
   Motor Vehicles:
   - 12.3
   - 4.6
 Transportation:
   default:
-  - 13.22
-  - 2
+  - 31.87
+  - 5.63

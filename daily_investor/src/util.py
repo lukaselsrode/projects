@@ -1,15 +1,20 @@
-import yaml
-import re
+import random
 import os
-import logging
+import csv
 import requests
-from datetime import datetime
+import logging
+import datetime
+import pandas as pd
+import re
+import yaml
 from bs4 import BeautifulSoup
 from typing import Dict, Optional
 
 
 root_dir = "/".join(os.path.abspath(__file__).split("/")[:-2])
 investments_file = "/".join([root_dir, "investments.yaml"])
+
+DATA_DIRECTORY = os.path.join("/".join(os.path.abspath(__file__).split("/")[:-2]), "data")
 
 
 def load_cfg(filename):
@@ -135,7 +140,16 @@ def update_industry_valuations(verbose: bool = True) -> None:
         'Utilities': 'Utilities',
         'Energy': 'Energy',
         'Industrials': 'Industrials',
-        'Communication Services': 'Communication Services'
+        'Communication Services': 'Communication Services',
+        # Add missing mappings from YAML file
+        'Consumer Services': 'Consumer Cyclical',
+        'Technology Services': 'Technology',
+        'Health Technology': 'Healthcare',
+        'Communications': 'Communication Services',
+        'Electronic Technology': 'Technology',
+        'Retail Trade': 'Consumer Cyclical',
+        'Consumer Durables': 'Consumer Cyclical',
+        'Transportation': 'Industrials'
     }
     
     INDUSTRY_MAP = {
@@ -204,8 +218,6 @@ def update_industry_valuations(verbose: bool = True) -> None:
                 if verbose:
                     print(f"  Found matching Finviz sector: {finviz_sector}")
                     print(f"  PE: {new_pe}, PB: {new_pb}")
-                new_pe = sector_data[src_sector]["PE"]
-                new_pb = sector_data[src_sector]["PB"]
                 
                 # Update default ratio if it exists
                 if 'default' in industries and isinstance(industries['default'], list):
@@ -228,7 +240,7 @@ def update_industry_valuations(verbose: bool = True) -> None:
                             'old_values': old_values,
                             'new_values': f"PE: {new_pe_val:.2f}, PB: {new_pb_val:.2f}",
                             'source': 'Finviz',
-                            'timestamp': str(datetime.now())
+                            'timestamp': str(datetime.datetime.now())
                         }
                         changes.append(change_info)
                         
@@ -273,7 +285,7 @@ def update_industry_valuations(verbose: bool = True) -> None:
                             'old_values': old_values,
                             'new_values': f"PE: {metrics[0]:.2f}, PB: {metrics[1]:.2f}",
                             'source': 'Finviz',
-                            'timestamp': str(datetime.now())
+                            'timestamp': str(datetime.datetime.now())
                         }
                         changes.append(change_info)
         
@@ -320,3 +332,42 @@ def update_industry_valuations(verbose: bool = True) -> None:
         if verbose:
             print(f"Error updating industry valuations: {str(e)}")
         raise
+
+
+def store_data_as_csv(
+    dataset:str, 
+    schema: list[str],
+    data: list[list] | pd.DataFrame, 
+    add_timestamp:bool=True
+    ) -> None:
+    filename = os.path.join(
+    DATA_DIRECTORY,
+    f"{dataset}_{str(datetime.datetime.now().strftime('%Y-%m-%d')).replace('-', '_')}.csv" if add_timestamp else f"{dataset}.csv"
+    )
+    if isinstance(data, pd.DataFrame):
+        data.to_csv(filename,index=False)
+        print(f"Stored {dataset} @ {filename}")
+        return 
+
+    r_data = random.choice(data)
+    assert len(schema) == len(r_data), f"Schema {schema} does not match input {data[0]}"
+    assert all(len(i) == len(r_data) for i in data), f"Got Mismatched Data Length"
+
+    with open(filename, "w+", newline="") as file:
+        csvwriter = csv.writer(file)
+        csvwriter.writerow(schema)
+        for row in data:
+                csvwriter.writerow(row)
+    print(f"Stored {dataset} @ {filename}")
+
+
+def read_data_as_pd(dataset:str) -> pd.DataFrame:
+    files = os.listdir(DATA_DIRECTORY)
+    matched_files = [i for i in files if dataset in i]
+    
+    if not matched_files:
+        print(f'File Not found {dataset} in {DATA_DIRECTORY}')
+        return 
+    print(f"Using {matched_files[0]} as {dataset} data")
+    return pd.read_csv(os.path.join(DATA_DIRECTORY,matched_files[0]))
+    

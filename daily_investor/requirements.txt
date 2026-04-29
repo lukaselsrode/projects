@@ -7,3 +7,4 @@ aiohttp>=3.8.0
 yfinance
 langgraph
 langchain_anthropic
+python-dotenv
