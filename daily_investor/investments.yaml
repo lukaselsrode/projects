@@ -2,7 +2,7 @@ config:
   ignore_negative_pe: false
   ignore_negative_pb: false
   dividend_threshold: 0.03
-  metric_threshold: 0.8
+  metric_threshold: 1
   selloff_threshold: 30
   weekly_investment: 400
   index_pct: 0.01
@@ -17,6 +17,30 @@ config:
   - SCHD
   - MPLY
   - SMH
+  score_weights:
+    value: 0.45
+    quality: 0.25
+    income: 0.15
+    momentum: 0.15
+  valuation_guardrails:
+    max_pe_component: 5.0
+    max_pb_component: 5.0
+    min_pe_ratio: 1.0
+    min_pb_ratio: 0.1
+  risk:
+    max_single_position_pct: 0.05
+    max_sector_pct: 0.25
+    max_order_pct_of_cash: 0.10
+    min_order_amount: 5.00
+    min_liquidity_volume: 500000
+  sell_rules:
+    stop_loss_pct: -0.12
+    trailing_stop_pct: -0.15
+    take_profit_pct: 0.4
+    sell_weak_value_below: 0.25
+    sell_yield_trap: true
+    sell_low_quality_below: -0.25
+    min_days_held_before_value_exit: 7
 Consumer Services:
   default:
   - 30.42

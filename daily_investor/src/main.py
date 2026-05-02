@@ -4,9 +4,15 @@ main.py — Daily investment strategy entry point.
 Responsibilities:
   - Robinhood login
   - Fund top-up
-  - Buy cycle: pre-filter → batch sentiment → execute orders
-  - Sell cycle: threshold scan → batch sentiment hold-check → execute sells
+  - Buy cycle: pre-filter → risk-check → batch sentiment → execute orders
+  - Sell cycle: hard/soft decision engine → batch sentiment (soft only) → execute
   - Iteration loop until cash exhausted or no more candidates
+
+Changes in this revision:
+  - Portfolio risk controls: position cap, sector cap, order cap, liquidity gate
+  - Sell decision engine: hard vs soft sells, stop-loss, take-profit, weak-value, yield-trap
+  - make_sales() refactored: hard sells execute immediately; soft sells optionally held by sentiment
+  - make_buys() passes every buy through can_buy_symbol() before placing order
 """
 
 import datetime
@@ -30,10 +36,12 @@ from util import (
     INDEX_PCT,
     METRIC_KEYS,
     METRIC_THRESHOLD,
-    SELLOFF_THRESHOLD,
+    RISK_LIMITS,
+    SELL_RULES,
     USE_SENTIMENT_ANALYSIS,
     WEEKLY_INVESTMENT,
     read_data_as_pd,
+    safe_float,
     update_industry_valuations,
 )
 
@@ -256,13 +264,282 @@ def _build_stocks_data(candidates: pd.DataFrame, action: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Portfolio risk controls
+# ---------------------------------------------------------------------------
+
+def get_portfolio_value() -> float:
+    """Return total portfolio equity."""
+    try:
+        return float(rb.account.build_user_profile().get("equity", 0) or 0)
+    except Exception as e:
+        logger.warning(f"Could not fetch portfolio value: {e}")
+        return 0.0
+
+
+def get_current_positions() -> dict:
+    """Return holdings dict {symbol: data}."""
+    try:
+        return rb.build_holdings() or {}
+    except Exception as e:
+        logger.warning(f"Could not fetch holdings: {e}")
+        return {}
+
+
+def get_position_value(symbol: str, holdings: dict) -> float:
+    """Return current dollar value of a position."""
+    try:
+        return float(holdings.get(symbol, {}).get("equity", 0) or 0)
+    except Exception:
+        return 0.0
+
+
+def get_sector_exposure(holdings: dict, agg_df: pd.DataFrame | None) -> dict[str, float]:
+    """Return {sector: total_dollar_value} for all current holdings."""
+    totals: dict[str, float] = {}
+    for symbol, data in holdings.items():
+        equity = safe_float(data.get("equity"), 0.0)
+        sector = "Unknown"
+        if agg_df is not None and not agg_df.empty and "symbol" in agg_df.columns:
+            row = agg_df[agg_df["symbol"] == symbol]
+            if not row.empty:
+                sector = str(row.iloc[0].get("sector") or "Unknown")
+        totals[sector] = totals.get(sector, 0.0) + equity
+    return totals
+
+
+def can_buy_symbol(
+    symbol: str,
+    allocation: float,
+    holdings: dict,
+    agg_df: pd.DataFrame | None,
+    portfolio_value: float,
+    available_cash: float,
+) -> tuple[bool, str, float]:
+    """
+    Validate and adjust a proposed buy allocation against risk limits.
+    Returns (approved, reason, adjusted_allocation).
+    Reduces allocation to the maximum allowed rather than blocking outright when possible.
+    """
+    max_single    = RISK_LIMITS["max_single_position_pct"]
+    max_sector    = RISK_LIMITS["max_sector_pct"]
+    max_order_pct = RISK_LIMITS["max_order_pct_of_cash"]
+    min_order     = RISK_LIMITS["min_order_amount"]
+    min_volume    = RISK_LIMITS["min_liquidity_volume"]
+
+    # Liquidity gate
+    if agg_df is not None and not agg_df.empty and "symbol" in agg_df.columns:
+        row = agg_df[agg_df["symbol"] == symbol]
+        if not row.empty:
+            vol = safe_float(row.iloc[0].get("volume"), 0.0)
+            if vol < min_volume:
+                return False, f"volume {vol:,.0f} < min {min_volume:,.0f}", 0.0
+
+    # Order size cap (fraction of available cash)
+    max_order = available_cash * max_order_pct
+    if allocation > max_order:
+        logger.info(
+            f"{symbol}: order ${allocation:.2f} capped to {max_order_pct:.0%} of cash "
+            f"(${available_cash:.2f}) = ${max_order:.2f}"
+        )
+        allocation = max_order
+
+    # Single-position cap
+    if portfolio_value > 0:
+        current_pos = get_position_value(symbol, holdings)
+        max_allowed = portfolio_value * max_single
+        room = max_allowed - current_pos
+        if room <= 0:
+            return (
+                False,
+                f"position cap reached (${current_pos:.2f} / ${max_allowed:.2f})",
+                0.0,
+            )
+        if allocation > room:
+            logger.info(
+                f"{symbol}: buy reduced ${allocation:.2f} → ${room:.2f} "
+                f"(single-position cap {max_single:.0%} of ${portfolio_value:.2f})"
+            )
+            allocation = room
+
+    # Sector cap
+    if portfolio_value > 0 and agg_df is not None and not agg_df.empty:
+        row = agg_df[agg_df["symbol"] == symbol]
+        sector = str(row.iloc[0].get("sector") or "") if not row.empty else ""
+        if sector:
+            sector_exp     = get_sector_exposure(holdings, agg_df)
+            current_sector = sector_exp.get(sector, 0.0)
+            max_sector_val = portfolio_value * max_sector
+            room = max_sector_val - current_sector
+            if room <= 0:
+                return (
+                    False,
+                    f"sector cap reached for {sector!r} "
+                    f"(${current_sector:.2f} / ${max_sector_val:.2f})",
+                    0.0,
+                )
+            if allocation > room:
+                logger.info(
+                    f"{symbol}: buy reduced ${allocation:.2f} → ${room:.2f} "
+                    f"(sector {sector!r} cap {max_sector:.0%})"
+                )
+                allocation = room
+
+    # Final minimum check — bump up to min_order if cash covers it
+    if allocation < min_order:
+        if available_cash >= min_order:
+            logger.info(
+                f"{symbol}: allocation ${allocation:.2f} below min — bumping to ${min_order:.2f}"
+            )
+            allocation = min_order
+        else:
+            return (
+                False,
+                f"allocation ${allocation:.2f} below min_order_amount ${min_order:.2f} "
+                f"and cash ${available_cash:.2f} insufficient to cover minimum",
+                0.0,
+            )
+
+    return True, "ok", allocation
+
+
+# ---------------------------------------------------------------------------
+# Sell decision engine
+# ---------------------------------------------------------------------------
+
+def evaluate_sell_candidate(
+    symbol: str,
+    holding: dict,
+    metrics_row: "pd.Series | None",
+) -> dict:
+    """
+    Evaluate a single holding for sell conditions.
+
+    Returns:
+        should_sell: bool
+        reason: str
+        severity: "hard" | "soft" | None
+        percent_change: float | None   (decimal: -0.12 = -12%)
+        value_metric: float | None
+        quality_score: float | None
+        yield_trap_flag: bool | None
+    """
+    # Derive percent_change — Robinhood returns it as a percentage string e.g. "-15.3"
+    percent_change: float | None = None
+    pct_raw = safe_float(holding.get("percent_change"))
+    if pct_raw is not None:
+        percent_change = pct_raw / 100.0
+
+    # Fallback: compute from average_buy_price and current price
+    if percent_change is None:
+        avg   = safe_float(holding.get("average_buy_price"))
+        price = safe_float(holding.get("price"))
+        if avg and avg > 0 and price:
+            percent_change = (price / avg) - 1.0
+
+    # Extract metrics
+    value_metric:   float | None = None
+    quality_score:  float | None = None
+    yield_trap_flag: bool | None = None
+
+    if metrics_row is not None:
+        value_metric  = safe_float(metrics_row.get("value_metric"))
+        quality_score = safe_float(metrics_row.get("quality_score"))
+        yt = metrics_row.get("yield_trap_flag")
+        if yt is not None:
+            try:
+                yield_trap_flag = bool(yt) if not pd.isna(yt) else None
+            except Exception:
+                yield_trap_flag = None
+
+    # Days held (best-effort — holding dict may not carry creation date)
+    days_held: int | None = None
+    try:
+        created = holding.get("created_at") or holding.get("initiation_date")
+        if created:
+            created_dt = datetime.datetime.fromisoformat(created.replace("Z", "+00:00"))
+            days_held = (datetime.datetime.now(datetime.timezone.utc) - created_dt).days
+    except Exception:
+        pass
+
+    stop_loss   = SELL_RULES["stop_loss_pct"]
+    take_profit = SELL_RULES["take_profit_pct"]
+    sell_weak   = SELL_RULES["sell_weak_value_below"]
+    sell_yt     = SELL_RULES["sell_yield_trap"]
+    sell_lq     = SELL_RULES["sell_low_quality_below"]
+    min_days    = SELL_RULES["min_days_held_before_value_exit"]
+
+    base = {
+        "percent_change":  percent_change,
+        "value_metric":    value_metric,
+        "quality_score":   quality_score,
+        "yield_trap_flag": yield_trap_flag,
+    }
+
+    # ── Hard sells ────────────────────────────────────────────────────────────
+
+    if percent_change is not None and percent_change <= stop_loss:
+        return {
+            **base,
+            "should_sell": True,
+            "reason":   f"stop loss breached ({percent_change:.1%} ≤ {stop_loss:.1%})",
+            "severity": "hard",
+        }
+
+    if sell_yt and yield_trap_flag and value_metric is not None and value_metric < sell_weak:
+        return {
+            **base,
+            "should_sell": True,
+            "reason":   f"yield trap with weak value_metric={value_metric:.3f} < {sell_weak}",
+            "severity": "hard",
+        }
+
+    if quality_score is not None and quality_score < sell_lq:
+        return {
+            **base,
+            "should_sell": True,
+            "reason":   f"quality_score {quality_score:.3f} below floor {sell_lq}",
+            "severity": "hard",
+        }
+
+    # ── Soft sells ────────────────────────────────────────────────────────────
+
+    if percent_change is not None and percent_change >= take_profit:
+        return {
+            **base,
+            "should_sell": True,
+            "reason":   f"take profit triggered ({percent_change:.1%} ≥ {take_profit:.1%})",
+            "severity": "soft",
+        }
+
+    if value_metric is not None and value_metric < sell_weak:
+        if days_held is None or days_held >= min_days:
+            days_str = f"{days_held}d" if days_held is not None else "unknown days"
+            return {
+                **base,
+                "should_sell": True,
+                "reason":   f"value_metric={value_metric:.3f} < {sell_weak} (held {days_str})",
+                "severity": "soft",
+            }
+
+    return {
+        **base,
+        "should_sell": False,
+        "reason":   "no sell condition met",
+        "severity": None,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Sell cycle
 # ---------------------------------------------------------------------------
 
 def make_sales() -> list[str]:
     """
-    Sell stocks whose price has moved beyond SELLOFF_THRESHOLD.
-    Sentiment used only as a hold-check — not a proactive sweep.
+    Evaluate all non-ETF holdings for sell conditions.
+
+    Hard sells (stop-loss, yield-trap, quality floor) execute immediately.
+    Soft sells (take-profit, weak value) are optionally held by sentiment.
+    Sentiment can only override soft sells — never hard sells.
     """
     sold: list[str] = []
 
@@ -272,63 +549,95 @@ def make_sales() -> list[str]:
         logger.error(f"Could not fetch holdings: {e}")
         return sold
 
-    # Step 1 — find threshold-breaching positions (zero API calls)
-    candidates: dict[str, dict] = {
-        symbol: data
-        for symbol, data in holdings.items()
-        if symbol not in ETFS
-        and float(data.get("quantity", 0)) > 0
-        and abs(float(data.get("percent_change", 0))) > SELLOFF_THRESHOLD
-    }
+    try:
+        agg_df = read_data_as_pd("agg_data")
+    except Exception:
+        agg_df = None
 
-    if not candidates:
-        logger.info("No stocks breach selloff threshold — nothing to sell")
-        return sold
+    scanned    = 0
+    hard_sells: dict[str, dict] = {}
+    soft_sells: dict[str, dict] = {}
 
-    logger.info(f"{len(candidates)} stock(s) breach threshold: {list(candidates)}")
+    for symbol, data in holdings.items():
+        if symbol in ETFS:
+            continue
+        if float(data.get("quantity", 0)) <= 0:
+            continue
 
-    # Step 2 — batch sentiment hold-check
-    holds: set[str] = set()
-    sentiment_results: dict[str, dict] = {}
+        scanned += 1
 
-    if USE_SENTIMENT_ANALYSIS:
-        candidates_df = pd.DataFrame([
-            {"symbol": sym, **{k: None for k in METRIC_KEYS}}
-            for sym in candidates
-        ])
-        stocks_data = _build_stocks_data(candidates_df, action="sell")
-        try:
-            sentiment_results = get_batch_sentiment_recommendations(stocks_data, action="sell")
-        except Exception:
-            logger.error("Batch sentiment failed for sell candidates — proceeding without", exc_info=True)
+        metrics_row = None
+        if agg_df is not None and not agg_df.empty and "symbol" in agg_df.columns:
+            row = agg_df[agg_df["symbol"] == symbol]
+            if not row.empty:
+                metrics_row = row.iloc[0]
 
-        for sym, result in sentiment_results.items():
-            if result["recommendation"] == "YES" and result["confidence"] >= CONFIDENCE_THRESHOLD:
-                pct = float(candidates[sym].get("percent_change", 0))
-                logger.info(
-                    f"HOLD {sym} — sentiment overrides {pct:.2f}% swing "
-                    f"({result['confidence']}%): {result['reasoning']}"
-                )
-                holds.add(sym)
+        decision = evaluate_sell_candidate(symbol, data, metrics_row)
 
-    # Step 3 — execute sells
-    to_sell = {sym: data for sym, data in candidates.items() if sym not in holds}
-    if not to_sell:
-        logger.info("All candidates held on sentiment — nothing to sell")
-        return sold
+        if not decision["should_sell"]:
+            continue
 
-    for symbol, data in to_sell.items():
-        quantity = float(data.get("quantity", 0))
-        pct      = float(data.get("percent_change", 0))
-        sentiment = sentiment_results.get(symbol, {})
-        logger.info(
-            f"SELL {symbol} | qty={quantity} | P/L={pct:.2f}% "
-            f"| sentiment={sentiment.get('recommendation','N/A')} ({sentiment.get('confidence','N/A')}%)"
-        )
+        if decision["severity"] == "hard":
+            hard_sells[symbol] = decision
+        else:
+            soft_sells[symbol] = decision
+
+    logger.info(
+        f"Sell scan: {scanned} holdings scanned | "
+        f"{len(hard_sells)} hard | {len(soft_sells)} soft | "
+        f"{scanned - len(hard_sells) - len(soft_sells)} no-action"
+    )
+
+    # ── Execute hard sells ────────────────────────────────────────────────────
+    for symbol, decision in hard_sells.items():
+        pct = decision.get("percent_change")
+        pct_str = f" | P/L={pct:.1%}" if pct is not None else ""
+        logger.info(f"HARD SELL {symbol} | {decision['reason']}{pct_str}")
+        quantity = float(holdings[symbol].get("quantity", 0))
         if _place_sell(symbol, quantity):
             sold.append(symbol)
 
-    logger.info(f"Sales complete: {len(sold)} sold, {len(holds)} held on sentiment")
+    # ── Soft sells with optional sentiment override ───────────────────────────
+    held_on_sentiment: set[str] = set()
+    sentiment_results: dict[str, dict] = {}
+
+    if soft_sells:
+        if USE_SENTIMENT_ANALYSIS:
+            soft_df = pd.DataFrame([
+                {"symbol": sym, **{k: None for k in METRIC_KEYS}}
+                for sym in soft_sells
+            ])
+            stocks_data = _build_stocks_data(soft_df, action="sell")
+            try:
+                sentiment_results = get_batch_sentiment_recommendations(stocks_data, action="sell")
+            except Exception:
+                logger.error("Batch sentiment failed for soft sells — executing all", exc_info=True)
+
+            for sym, result in sentiment_results.items():
+                if result["recommendation"] == "YES" and result["confidence"] >= CONFIDENCE_THRESHOLD:
+                    logger.info(
+                        f"HOLD {sym} — sentiment overrides soft sell "
+                        f"({result['confidence']}%): {result['reasoning']}"
+                    )
+                    held_on_sentiment.add(sym)
+
+        for symbol, decision in soft_sells.items():
+            if symbol in held_on_sentiment:
+                continue
+            pct = decision.get("percent_change")
+            pct_str = f" | P/L={pct:.1%}" if pct is not None else ""
+            logger.info(f"SOFT SELL {symbol} | {decision['reason']}{pct_str}")
+            quantity = float(holdings[symbol].get("quantity", 0))
+            if _place_sell(symbol, quantity):
+                sold.append(symbol)
+
+    logger.info(
+        f"Sell summary: {scanned} scanned | "
+        f"{len(hard_sells)} hard | {len(soft_sells)} soft candidates | "
+        f"{len(held_on_sentiment)} held on sentiment | "
+        f"{len(sold)} executed | "
+        f"{len(hard_sells) + len(soft_sells) - len(sold)} skipped/no-action"
+    )
     return sold
 
 
@@ -341,8 +650,8 @@ def make_buys(df: pd.DataFrame, is_first_iteration: bool = True) -> tuple[list, 
     Execute buy orders.
     Returns (purchased, skipped, failed).
     """
-    total_cash  = get_available_cash()
-    etf_amount  = total_cash * INDEX_PCT
+    total_cash   = get_available_cash()
+    etf_amount   = total_cash * INDEX_PCT
     stock_amount = total_cash - etf_amount
     logger.info(f"Allocating ${etf_amount:.2f} to ETFs, ${stock_amount:.2f} to stocks")
 
@@ -381,6 +690,14 @@ def make_buys(df: pd.DataFrame, is_first_iteration: bool = True) -> tuple[list, 
         logger.warning(f"No stocks pass value_metric ≥ {METRIC_THRESHOLD}")
         return [], df["symbol"].tolist(), []
 
+    # Load portfolio context once before the loop
+    holdings        = get_current_positions()
+    portfolio_value = get_portfolio_value()
+    try:
+        agg_df = read_data_as_pd("agg_data")
+    except Exception:
+        agg_df = None
+
     # Fast path — no sentiment
     if not USE_SENTIMENT_ANALYSIS:
         purchased, skipped, failed = [], [], []
@@ -388,12 +705,22 @@ def make_buys(df: pd.DataFrame, is_first_iteration: bool = True) -> tuple[list, 
         for _, row in candidates.iterrows():
             symbol = row["symbol"]
             cash   = get_available_cash() * (1 - INDEX_PCT)
-            if cash < 1.0:
+            if cash < RISK_LIMITS["min_order_amount"]:
+                logger.info(f"Cash ${cash:.2f} below min order ${RISK_LIMITS['min_order_amount']:.2f} — exiting buy loop")
                 break
-            alloc  = (row["value_metric"] / total_value) * cash if total_value else 0
+            alloc = (row["value_metric"] / total_value) * cash if total_value else 0
+
+            ok, reason, adj_alloc = can_buy_symbol(
+                symbol, alloc, holdings, agg_df, portfolio_value, cash
+            )
+            if not ok:
+                logger.info(f"Skipping {symbol}: {reason}")
+                skipped.append(symbol)
+                continue
+
             try:
-                if AUTO_APPROVE or confirm(f"Buy ${alloc:,.2f} of {symbol}?"):
-                    if _place_buy(symbol, alloc):
+                if AUTO_APPROVE or confirm(f"Buy ${adj_alloc:,.2f} of {symbol}?"):
+                    if _place_buy(symbol, adj_alloc):
                         purchased.append(symbol)
                         time.sleep(0.5)
                     else:
@@ -432,23 +759,28 @@ def make_buys(df: pd.DataFrame, is_first_iteration: bool = True) -> tuple[list, 
             skipped.append(symbol)
             continue
 
-        # Re-fetch cash before every order — pending orders drain the balance in real time
         cash = get_available_cash() * (1 - INDEX_PCT)
-        if cash < 1.0:
-            logger.info("Cash exhausted — stopping buys")
+        if cash < RISK_LIMITS["min_order_amount"]:
+            logger.info(f"Cash ${cash:.2f} below min order ${RISK_LIMITS['min_order_amount']:.2f} — exiting buy loop")
             break
 
         alloc = (row["value_metric"] / total_value) * cash if total_value else 0
-        if alloc < 0.01:
-            logger.info(f"Allocation for {symbol} too small (${alloc:.4f}) — skipping")
+
+        ok, reason, adj_alloc = can_buy_symbol(
+            symbol, alloc, holdings, agg_df, portfolio_value, cash
+        )
+        if not ok:
+            logger.info(f"Skipping {symbol}: {reason}")
             skipped.append(symbol)
             continue
 
         try:
-            if AUTO_APPROVE or confirm(f"Buy ${alloc:,.2f} of {symbol}? ({row['value_metric']/total_value:.1%})"):
-                if _place_buy(symbol, alloc):
+            if AUTO_APPROVE or confirm(
+                f"Buy ${adj_alloc:,.2f} of {symbol}? ({row['value_metric']/total_value:.1%})"
+            ):
+                if _place_buy(symbol, adj_alloc):
                     purchased.append(symbol)
-                    time.sleep(0.5)  # Robinhood order rate limit
+                    time.sleep(0.5)
                 else:
                     failed.append(symbol)
         except Exception as e:
@@ -505,8 +837,13 @@ def run_daily_strat() -> None:
             break
 
         cash = get_available_cash()
-        if cash < 1.0:
-            logger.info("Cash exhausted — exiting")
+        if cash < RISK_LIMITS["min_order_amount"]:
+            logger.info(f"Cash ${cash:.2f} below min order ${RISK_LIMITS['min_order_amount']:.2f} — skipping to sell phase")
+            try:
+                logger.info("=== SELL PHASE (cash exhausted) ===")
+                make_sales()
+            except Exception as e:
+                logger.error(f"Sell phase error: {e}")
             break
 
         made_buys = made_sells = False

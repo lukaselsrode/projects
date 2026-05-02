@@ -54,8 +54,8 @@ _inv = {k: v for k, v in _cfg.items() if k != "config"}
 
 IGNORE_NEGATIVE_PE:   bool  = _app.get("ignore_negative_pe", False)
 IGNORE_NEGATIVE_PB:   bool  = _app.get("ignore_negative_pb", False)
-DIVIDEND_THRESHOLD:   float = float(_app.get("dividend_threshold", 2.5))
-METRIC_THRESHOLD:     float = float(_app.get("metric_threshold", 4))
+DIVIDEND_THRESHOLD:   float = float(_app.get("dividend_threshold", 0.03))
+METRIC_THRESHOLD:     float = float(_app.get("metric_threshold", 0.8))
 SELLOFF_THRESHOLD:    float = float(_app.get("selloff_threshold", 30))
 WEEKLY_INVESTMENT:    float = float(_app.get("weekly_investment", 400))
 INDEX_PCT:            float = float(_app.get("index_pct", 0.85))
@@ -63,6 +63,73 @@ AUTO_APPROVE:         bool  = _app.get("auto_approve", False)
 USE_SENTIMENT_ANALYSIS: bool = _app.get("use_sentiment_analysis", False)
 CONFIDENCE_THRESHOLD: float = float(_app.get("confidence_threshold", 70))
 ETFS:                 list  = _app.get("etfs", ["SPY", "VOO", "VTI", "QQQ", "SCHD"])
+
+# ---------------------------------------------------------------------------
+# Score weights — weights must sum to 1.0; fall back to defaults otherwise
+# ---------------------------------------------------------------------------
+
+_sw = _app.get("score_weights", {})
+_sw_v = float(_sw.get("value",    0.45))
+_sw_q = float(_sw.get("quality",  0.25))
+_sw_i = float(_sw.get("income",   0.15))
+_sw_m = float(_sw.get("momentum", 0.15))
+if abs((_sw_v + _sw_q + _sw_i + _sw_m) - 1.0) > 0.01:
+    logger.warning(
+        f"score_weights sum to {_sw_v+_sw_q+_sw_i+_sw_m:.3f} (not 1.0) — using defaults"
+    )
+    _sw_v, _sw_q, _sw_i, _sw_m = 0.45, 0.25, 0.15, 0.15
+
+SCORE_WEIGHTS: dict = {
+    "value":    _sw_v,
+    "quality":  _sw_q,
+    "income":   _sw_i,
+    "momentum": _sw_m,
+}
+
+# ---------------------------------------------------------------------------
+# Valuation guardrails
+# ---------------------------------------------------------------------------
+
+_vg = _app.get("valuation_guardrails", {})
+MAX_PE_COMPONENT: float = float(_vg.get("max_pe_component", 5.0))
+MAX_PB_COMPONENT: float = float(_vg.get("max_pb_component", 5.0))
+MIN_PE_RATIO:     float = float(_vg.get("min_pe_ratio",     1.0))
+MIN_PB_RATIO:     float = float(_vg.get("min_pb_ratio",     0.1))
+
+VALUATION_GUARDRAILS: dict = {
+    "max_pe_component": MAX_PE_COMPONENT,
+    "max_pb_component": MAX_PB_COMPONENT,
+    "min_pe_ratio":     MIN_PE_RATIO,
+    "min_pb_ratio":     MIN_PB_RATIO,
+}
+
+# ---------------------------------------------------------------------------
+# Risk limits
+# ---------------------------------------------------------------------------
+
+_rl = _app.get("risk", {})
+RISK_LIMITS: dict = {
+    "max_single_position_pct": float(_rl.get("max_single_position_pct", 0.05)),
+    "max_sector_pct":          float(_rl.get("max_sector_pct",          0.25)),
+    "max_order_pct_of_cash":   float(_rl.get("max_order_pct_of_cash",   0.10)),
+    "min_order_amount":        float(_rl.get("min_order_amount",        5.00)),
+    "min_liquidity_volume":    float(_rl.get("min_liquidity_volume",    500_000)),
+}
+
+# ---------------------------------------------------------------------------
+# Sell rules
+# ---------------------------------------------------------------------------
+
+_sr = _app.get("sell_rules", {})
+SELL_RULES: dict = {
+    "stop_loss_pct":                  float(_sr.get("stop_loss_pct",                  -0.12)),
+    "trailing_stop_pct":              float(_sr.get("trailing_stop_pct",              -0.15)),
+    "take_profit_pct":                float(_sr.get("take_profit_pct",                 0.35)),
+    "sell_weak_value_below":          float(_sr.get("sell_weak_value_below",           0.25)),
+    "sell_yield_trap":                bool(_sr.get("sell_yield_trap",                  True)),
+    "sell_low_quality_below":         float(_sr.get("sell_low_quality_below",         -0.25)),
+    "min_days_held_before_value_exit": int(_sr.get("min_days_held_before_value_exit",    7)),
+}
 
 # ---------------------------------------------------------------------------
 # Canonical agg_data schema — single definition used by all modules
@@ -75,11 +142,16 @@ METRIC_KEYS: list[str] = [
     "pe_ratio",
     "pb_ratio",
     "dividend_yield",
+    "current_price",
+    "low_52w",
+    "high_52w",
+    "position_52w",
     "pe_comp",
     "pb_comp",
     "value_score",
     "income_score",
     "quality_score",
+    "momentum_score",
     "yield_trap_flag",
     "value_metric",
     "buy_to_sell_ratio",
@@ -142,7 +214,7 @@ def store_data_as_csv(
 
 
 def read_data_as_pd(dataset: str) -> pd.DataFrame | None:
-    """Return the first matching CSV for dataset, or None if not found."""
+    """Return the most-recent matching CSV for dataset, or None if not found."""
     try:
         files = sorted(os.listdir(DATA_DIRECTORY))
     except FileNotFoundError:
@@ -153,9 +225,10 @@ def read_data_as_pd(dataset: str) -> pd.DataFrame | None:
         logger.debug(f"No CSV found for dataset '{dataset}' in {DATA_DIRECTORY}")
         return None
 
-    path = os.path.join(DATA_DIRECTORY, matches[0])
-    logger.debug(f"Using {matches[0]} as {dataset} data")
-    print(f"Using {matches[0]} as {dataset} data")
+    # Date-suffixed filenames sort chronologically — take the latest
+    path = os.path.join(DATA_DIRECTORY, matches[-1])
+    logger.debug(f"Using {matches[-1]} as {dataset} data")
+    print(f"Using {matches[-1]} as {dataset} data")
     return pd.read_csv(path)
 
 

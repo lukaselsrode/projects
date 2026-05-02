@@ -84,10 +84,18 @@ _async_client = _make_async_client()
 
 _SCORING_GUIDE = """\
 Scoring guide:
-- PE_COMP/PB_COMP > 1 → cheaper than sector threshold (positive signal)
-- YIELD_TRAP=True → dividend likely caused by price collapse (major warning)
-- VALUE_METRIC combines value + quality + income; higher is better
-- Buy/Sell Ratio > 1 supports buying; < 1 is a warning sign"""
+- VALUE_SCORE measures PE/PB cheapness relative to sector thresholds; higher is better.
+- PE_COMP/PB_COMP > 1 indicates cheaper than sector threshold (positive signal).
+- INCOME_SCORE rewards reasonable dividend yield.
+- QUALITY_SCORE is a basic quality/liquidity proxy; higher is better.
+- MOMENTUM_SCORE measures 52-week price-location health:
+    position_52w < 0.15 may indicate a falling-knife risk (-0.4 score).
+    position_52w 0.35–0.75 is healthy middle range (+0.3 score).
+    position_52w 0.75–0.95 shows strong momentum (+0.5 score).
+    position_52w > 0.95 may indicate extension near 52-week highs (+0.2 score).
+- YIELD_TRAP_FLAG=True → dividend likely caused by price collapse (major warning).
+- FINAL_VALUE_METRIC combines value + quality + income + momentum; higher is better.
+- Buy/Sell Ratio > 1 supports buying; < 1 is a warning sign."""
 
 
 def _format_news(news_data: dict, symbol: str) -> str:
@@ -114,12 +122,16 @@ def _valuation_block(symbol: str, f: dict, news_text: str) -> str:
         f"FUNDAMENTAL METRICS:\n"
         f"  PE={f.get('pe_ratio','N/A')}  PB={f.get('pb_ratio','N/A')}\n"
         f"  Dividend Yield={f.get('dividend_yield','N/A')}  Volume={f.get('volume','N/A')}\n"
+        f"  Current Price={f.get('current_price','N/A')}\n"
+        f"  52W Low={f.get('low_52w','N/A')}  52W High={f.get('high_52w','N/A')}\n"
+        f"  52W Position={f.get('position_52w','N/A')}\n"
         f"  Industry={f.get('industry','N/A')}  Sector={f.get('sector','N/A')}\n\n"
-        f"VALUATION:\n"
-        f"  PE_COMP={f.get('pe_comp','N/A')}  PB_COMP={f.get('pb_comp','N/A')}\n"
+        f"FACTOR SCORES:\n"
         f"  VALUE_SCORE={f.get('value_score','N/A')}  INCOME_SCORE={f.get('income_score','N/A')}\n"
-        f"  QUALITY_SCORE={f.get('quality_score','N/A')}  YIELD_TRAP={f.get('yield_trap_flag','N/A')}\n"
-        f"  VALUE_METRIC={f.get('value_metric','N/A')}\n\n"
+        f"  QUALITY_SCORE={f.get('quality_score','N/A')}  MOMENTUM_SCORE={f.get('momentum_score','N/A')}\n"
+        f"  PE_COMP={f.get('pe_comp','N/A')}  PB_COMP={f.get('pb_comp','N/A')}\n"
+        f"  YIELD_TRAP_FLAG={f.get('yield_trap_flag','N/A')}\n"
+        f"  FINAL_VALUE_METRIC={f.get('value_metric','N/A')}\n\n"
         f"ANALYST: Buy/Sell Ratio={f.get('buy_to_sell_ratio','N/A')}\n\n"
         f"NEWS:\n{news_text}"
     )

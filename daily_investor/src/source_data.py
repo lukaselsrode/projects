@@ -8,8 +8,16 @@ Key fixes vs original:
   - AGG_DATA_COLUMNS / METRIC_KEYS imported from util (single definition)
   - Reddit merge in get_data() removed — reddit data was never reliably populated
     and added unnecessary complexity; news is the active sentiment signal
+
+Changes in this revision:
+  - Added 52-week price fields: current_price, low_52w, high_52w, position_52w
+  - Added momentum_score based on 52-week price location
+  - Valuation guardrails: MIN_PE_RATIO, MIN_PB_RATIO, MAX_PE_COMPONENT, MAX_PB_COMPONENT
+  - Score weights driven by SCORE_WEIGHTS from util (YAML-configurable)
+  - Quote enrichment step adds current_price to fundamental data
 """
 
+import logging
 import os
 import time
 
@@ -26,8 +34,13 @@ from util import (
     DIVIDEND_THRESHOLD,
     IGNORE_NEGATIVE_PB,
     IGNORE_NEGATIVE_PE,
+    MAX_PE_COMPONENT,
+    MAX_PB_COMPONENT,
+    MIN_PE_RATIO,
+    MIN_PB_RATIO,
     METRIC_KEYS,
     METRIC_THRESHOLD,
+    SCORE_WEIGHTS,
     get_investment_ratios,
     read_data_as_pd,
     safe_float,
@@ -35,6 +48,8 @@ from util import (
 )
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Stock universe
@@ -137,7 +152,7 @@ def gen_symbols_list(force_refresh: bool = False) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Scoring helpers
+# Pure scoring helpers
 # ---------------------------------------------------------------------------
 
 def _dividend_income_score(dividend_yield: float) -> tuple[float, bool]:
@@ -173,6 +188,35 @@ def _quality_score(
     elif 0.02 <= dividend_yield <= 0.06:
         score += 0.2
     return round(score, 3)
+
+
+def _position_52w(
+    current_price: float | None,
+    low_52w: float | None,
+    high_52w: float | None,
+) -> float | None:
+    """Return price location within 52-week range, clamped to [0.0, 1.0]."""
+    if current_price is None or low_52w is None or high_52w is None:
+        return None
+    if high_52w <= low_52w:
+        return None
+    raw = (current_price - low_52w) / (high_52w - low_52w)
+    return max(0.0, min(1.0, raw))
+
+
+def get_momentum_score(position_52w: float | None) -> float:
+    """Map 52-week position [0,1] to a momentum score."""
+    if position_52w is None:
+        return 0.0
+    if position_52w < 0.15:
+        return -0.4      # possible falling knife
+    if position_52w < 0.35:
+        return 0.1       # beaten down but not dead
+    if position_52w < 0.75:
+        return 0.3       # healthy middle/upper range
+    if position_52w <= 0.95:
+        return 0.5       # strong momentum
+    return 0.2           # near high, possible extension
 
 
 def _get_buy_to_sell_ratio(symbol: str) -> float | None:
@@ -215,15 +259,47 @@ def _evaluate_stock(symbol: str, stock: dict) -> list | None:
     if pb_ratio is not None and pb_ratio < 0 and IGNORE_NEGATIVE_PB:
         return None
 
+    # 52-week / momentum fields — try multiple field name conventions
+    current_price = safe_float(
+        stock.get("current_price") or stock.get("last_trade_price") or stock.get("adjusted_open_price")
+    )
+    low_52w  = safe_float(stock.get("low_52w")  or stock.get("low_52_weeks"))
+    high_52w = safe_float(stock.get("high_52w") or stock.get("high_52_weeks"))
+    pos_52w  = _position_52w(current_price, low_52w, high_52w)
+    momentum = get_momentum_score(pos_52w)
+
     pe_threshold, pb_threshold = get_investment_ratios(stock.get("sector"), stock.get("industry"))
 
-    pe_comp = pe_threshold / pe_ratio if pe_ratio and 0 < pe_ratio < pe_threshold else 0.0
-    pb_comp = pb_threshold / pb_ratio if pb_ratio and 0 < pb_ratio < pb_threshold else 0.0
+    # PE component with guardrails
+    pe_comp_raw = 0.0
+    if pe_ratio is not None and MIN_PE_RATIO <= pe_ratio < pe_threshold:
+        pe_comp_raw = pe_threshold / pe_ratio
+    pe_comp = min(pe_comp_raw, MAX_PE_COMPONENT)
 
-    value_score = round(0.6 * pe_comp + 0.4 * pb_comp, 3)
+    # PB component with guardrails
+    pb_comp_raw = 0.0
+    if pb_ratio is not None and MIN_PB_RATIO <= pb_ratio < pb_threshold:
+        pb_comp_raw = pb_threshold / pb_ratio
+    pb_comp = min(pb_comp_raw, MAX_PB_COMPONENT)
+
+    if pe_comp_raw > MAX_PE_COMPONENT or pb_comp_raw > MAX_PB_COMPONENT:
+        logger.debug(
+            f"{symbol}: capped PE/PB component "
+            f"pe_raw={pe_comp_raw:.3f}, pe_capped={pe_comp:.3f}, "
+            f"pb_raw={pb_comp_raw:.3f}, pb_capped={pb_comp:.3f}"
+        )
+
+    value_score  = round(0.6 * pe_comp + 0.4 * pb_comp, 3)
     income_score, yield_trap_flag = _dividend_income_score(dividend_yield)
-    quality = _quality_score(pe_ratio, pb_ratio, volume, dividend_yield)
-    final_metric = round(0.50 * value_score + 0.30 * quality + 0.20 * income_score, 3)
+    quality      = _quality_score(pe_ratio, pb_ratio, volume, dividend_yield)
+
+    final_metric = round(
+        SCORE_WEIGHTS["value"]    * value_score
+        + SCORE_WEIGHTS["quality"]  * quality
+        + SCORE_WEIGHTS["income"]   * income_score
+        + SCORE_WEIGHTS["momentum"] * momentum,
+        3,
+    )
     buy_to_sell = _get_buy_to_sell_ratio(symbol)
 
     return [
@@ -233,11 +309,16 @@ def _evaluate_stock(symbol: str, stock: dict) -> list | None:
         pe_ratio,
         pb_ratio,
         dividend_yield,
+        current_price,
+        low_52w,
+        high_52w,
+        pos_52w,
         pe_comp,
         pb_comp,
         value_score,
         income_score,
         quality,
+        momentum,
         yield_trap_flag,
         final_metric,
         buy_to_sell,
@@ -247,6 +328,29 @@ def _evaluate_stock(symbol: str, stock: dict) -> list | None:
 # ---------------------------------------------------------------------------
 # Data fetching
 # ---------------------------------------------------------------------------
+
+def _enrich_with_quotes(symbols: list[str], fundamentals: dict[str, dict]) -> None:
+    """Batch-fetch current prices from Robinhood quotes and merge into fundamentals. Non-fatal."""
+    batch_size = 50
+    enriched = 0
+    for i in range(0, len(symbols), batch_size):
+        batch = symbols[i: i + batch_size]
+        try:
+            quotes = rb.stocks.get_quotes(batch)
+            if not quotes or not isinstance(quotes, list):
+                continue
+            for q in quotes:
+                if not q or not isinstance(q, dict):
+                    continue
+                sym   = q.get("symbol")
+                price = q.get("last_trade_price") or q.get("last_extended_hours_trade_price")
+                if sym and sym in fundamentals and price:
+                    fundamentals[sym]["current_price"] = price
+                    enriched += 1
+        except Exception as e:
+            logger.warning(f"Quote batch {i//batch_size} failed: {str(e)[:60]}")
+    logger.info(f"Quote enrichment: {enriched}/{len(symbols)} symbols have current_price")
+
 
 def _get_robinhood_fundamentals(tickers: list[str], force_refresh: bool) -> pd.DataFrame | None:
     if not force_refresh:
@@ -271,6 +375,9 @@ def _get_robinhood_fundamentals(tickers: list[str], force_refresh: bool) -> pd.D
             print(f"Batch {batch_num} failed: {str(e)[:60]}")
 
     print(f"Fetched fundamentals for {len(fundamentals)} stocks")
+
+    # Enrich with current prices from quotes
+    _enrich_with_quotes(list(fundamentals.keys()), fundamentals)
 
     rows = []
     for symbol, data in fundamentals.items():
