@@ -1,373 +1,360 @@
-import random
-import os
+"""
+util.py — Configuration, shared constants, and I/O helpers.
+
+Single source of truth for:
+  - All YAML-driven config values
+  - DATA_DIRECTORY path
+  - METRIC_KEYS (canonical schema for agg_data rows)
+  - safe_float
+  - CSV read/write helpers
+  - Finviz valuation updater
+"""
+
 import csv
-import requests
-import logging
 import datetime
-import pandas as pd
+import logging
+import os
+import random
 import re
+
+import pandas as pd
+import requests
 import yaml
 from bs4 import BeautifulSoup
-from typing import Dict, Optional
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIRECTORY = os.path.join(ROOT_DIR, "data")
+INVESTMENTS_FILE = os.path.join(ROOT_DIR, "investments.yaml")
+
+os.makedirs(DATA_DIRECTORY, exist_ok=True)
+
+# ---------------------------------------------------------------------------
+# Config loading
+# ---------------------------------------------------------------------------
+
+def _load_cfg() -> dict:
+    with open(INVESTMENTS_FILE, "r") as f:
+        return yaml.safe_load(f)
 
 
-root_dir = "/".join(os.path.abspath(__file__).split("/")[:-2])
-investments_file = "/".join([root_dir, "investments.yaml"])
+_cfg = _load_cfg()
+_app = _cfg.get("config", {})
+_inv = {k: v for k, v in _cfg.items() if k != "config"}
 
-DATA_DIRECTORY = os.path.join("/".join(os.path.abspath(__file__).split("/")[:-2]), "data")
+# ---------------------------------------------------------------------------
+# Public config constants
+# ---------------------------------------------------------------------------
 
+IGNORE_NEGATIVE_PE:   bool  = _app.get("ignore_negative_pe", False)
+IGNORE_NEGATIVE_PB:   bool  = _app.get("ignore_negative_pb", False)
+DIVIDEND_THRESHOLD:   float = float(_app.get("dividend_threshold", 2.5))
+METRIC_THRESHOLD:     float = float(_app.get("metric_threshold", 4))
+SELLOFF_THRESHOLD:    float = float(_app.get("selloff_threshold", 30))
+WEEKLY_INVESTMENT:    float = float(_app.get("weekly_investment", 400))
+INDEX_PCT:            float = float(_app.get("index_pct", 0.85))
+AUTO_APPROVE:         bool  = _app.get("auto_approve", False)
+USE_SENTIMENT_ANALYSIS: bool = _app.get("use_sentiment_analysis", False)
+CONFIDENCE_THRESHOLD: float = float(_app.get("confidence_threshold", 70))
+ETFS:                 list  = _app.get("etfs", ["SPY", "VOO", "VTI", "QQQ", "SCHD"])
 
-def load_cfg(filename):
-    with open(filename, "r") as file:
-        return yaml.safe_load(file)
+# ---------------------------------------------------------------------------
+# Canonical agg_data schema — single definition used by all modules
+# ---------------------------------------------------------------------------
 
+METRIC_KEYS: list[str] = [
+    "industry",
+    "sector",
+    "volume",
+    "pe_ratio",
+    "pb_ratio",
+    "dividend_yield",
+    "pe_comp",
+    "pb_comp",
+    "value_score",
+    "income_score",
+    "quality_score",
+    "yield_trap_flag",
+    "value_metric",
+    "buy_to_sell_ratio",
+]
 
-# Load the full configuration file
-config = load_cfg(investments_file)
+AGG_DATA_COLUMNS: list[str] = ["symbol"] + METRIC_KEYS
 
-# Extract the main configuration and sector configurations
-app_config = config.get('config', {})
-inv_cfg = {k: v for k, v in config.items() if k != 'config'}
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
 
-# Make config values easily accessible
-IGNORE_NEGATIVE_PE = app_config.get('ignore_negative_pe', False)
-IGNORE_NEGATIVE_PB = app_config.get('ignore_negative_pb', False)
-DIVIDEND_THRESHOLD = app_config.get('dividend_threshold', 2.5)
-METRIC_THRESHOLD = app_config.get('metric_threshold', 4)
-SELLOFF_THRESHOLD = app_config.get('selloff_threshold', 30)
-WEEKLY_INVESTMENT = str(app_config.get('weekly_investment', 400))
-INDEX_PCT = app_config.get('index_pct', 0.85)
-AUTO_APPROVE = app_config.get('auto_approve', False)
-USE_SENTIMENT_ANALYSIS = app_config.get('use_sentiment_analysis', False)
-CONFIDENCE_THRESHOLD = app_config.get('confidence_threshold', 70)
-ETFS = app_config.get('etfs', ['SPY', 'VOO', 'VTI', 'QQQ', 'SCHD'])
-
-
-def split_string_to_set(input_string):
-    separators = r"[\/ :&]+"
-    substrings = set(re.split(separators, input_string))
-    return substrings
-
-
-def get_investment_ratios(sector, industry=None):
-    # Default ratios if no sector/industry matches are found 
-    DEFAULT_RATIOS = [15.0, 2.5]  # [P/E, P/B] - conservative defaults
-    
-    if not sector or sector not in inv_cfg:
-        return DEFAULT_RATIOS
-        
-    default = inv_cfg[sector].get('default', DEFAULT_RATIOS)
-    
-    if not industry:
+def safe_float(value, default: Optional[float] = None) -> Optional[float]:
+    """Convert value to float, returning default on failure or None/NaN input."""
+    try:
+        if value is None or value == "" or str(value).lower() == "nan":
+            return default
+        return float(value)
+    except (TypeError, ValueError):
         return default
 
-    def makeshift_ratios(ratios):
+
+# ---------------------------------------------------------------------------
+# CSV / DataFrame I/O
+# ---------------------------------------------------------------------------
+
+def _dated_filename(dataset: str) -> str:
+    date_str = datetime.datetime.now().strftime("%Y_%m_%d")
+    return os.path.join(DATA_DIRECTORY, f"{dataset}_{date_str}.csv")
+
+
+def store_data_as_csv(
+    dataset: str,
+    schema: list[str],
+    data: list[list] | pd.DataFrame,
+    add_timestamp: bool = True,
+) -> None:
+    filename = _dated_filename(dataset) if add_timestamp else os.path.join(DATA_DIRECTORY, f"{dataset}.csv")
+
+    if isinstance(data, pd.DataFrame):
+        data.to_csv(filename, index=False)
+        logger.info(f"Stored {dataset} → {filename}")
+        return
+
+    if not data:
+        logger.warning(f"store_data_as_csv called with empty data for {dataset}")
+        return
+
+    row_len = len(data[0])
+    if len(schema) != row_len:
+        raise ValueError(f"Schema length {len(schema)} != data row length {row_len}")
+    if not all(len(r) == row_len for r in data):
+        raise ValueError("Mismatched row lengths in data")
+
+    with open(filename, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(schema)
+        writer.writerows(data)
+
+    logger.info(f"Stored {dataset} → {filename}")
+
+
+def read_data_as_pd(dataset: str) -> pd.DataFrame | None:
+    """Return the first matching CSV for dataset, or None if not found."""
+    try:
+        files = sorted(os.listdir(DATA_DIRECTORY))
+    except FileNotFoundError:
+        return None
+
+    matches = [f for f in files if dataset in f and f.endswith(".csv")]
+    if not matches:
+        logger.debug(f"No CSV found for dataset '{dataset}' in {DATA_DIRECTORY}")
+        return None
+
+    path = os.path.join(DATA_DIRECTORY, matches[0])
+    logger.debug(f"Using {matches[0]} as {dataset} data")
+    print(f"Using {matches[0]} as {dataset} data")
+    return pd.read_csv(path)
+
+
+# ---------------------------------------------------------------------------
+# Sector/industry ratio lookup
+# ---------------------------------------------------------------------------
+
+def _split_to_set(s: str) -> set[str]:
+    return set(re.split(r"[\/ :&]+", s))
+
+
+def get_investment_ratios(sector: str, industry: str | None = None) -> list[float]:
+    """Return [PE_threshold, PB_threshold] for the given sector/industry."""
+    DEFAULT = [15.0, 2.5]
+
+    if not sector or sector not in _inv:
+        return DEFAULT
+
+    sector_cfg = _inv[sector]
+    default = sector_cfg.get("default", DEFAULT)
+
+    def _coerce(ratios: list) -> list[float]:
         return [
             ratios[0] if ratios and len(ratios) > 0 and ratios[0] is not None else default[0],
             ratios[1] if ratios and len(ratios) > 1 and ratios[1] is not None else default[1],
         ]
 
-    # direct match
-    if industry in inv_cfg[sector] and inv_cfg[sector].get(industry):
-        return makeshift_ratios(inv_cfg[sector][industry])
+    if not industry:
+        return default
+
+    # Exact match
+    if industry in sector_cfg and sector_cfg[industry]:
+        return _coerce(sector_cfg[industry])
 
     # Fuzzy match
     try:
-        stdin_set = split_string_to_set(industry)
-        min_diff = float('inf')
-        match = None
-        
-        for ind in inv_cfg[sector]:
-            if ind == 'default':
+        query = _split_to_set(industry)
+        best, best_diff = None, float("inf")
+        for key in sector_cfg:
+            if key == "default":
                 continue
-                
-            ind_set = split_string_to_set(ind)
-            diff = len(stdin_set.difference(ind_set))
-
-            if not diff and len(ind_set) == len(stdin_set):
-                return makeshift_ratios(inv_cfg[sector][ind])
-
-            if diff < min_diff:
-                min_diff = diff
-                match = ind
-                
-        if match and min_diff < 3:  # Only use fuzzy match if it's a close match
-            return makeshift_ratios(inv_cfg[sector][match])
-            
+            diff = len(query.difference(_split_to_set(key)))
+            if diff == 0 and len(_split_to_set(key)) == len(query):
+                return _coerce(sector_cfg[key])
+            if diff < best_diff:
+                best_diff, best = diff, key
+        if best and best_diff < 3:
+            return _coerce(sector_cfg[best])
     except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Error in fuzzy matching industry '{industry}': {str(e)}")
-    
-    return default  # Return sector default if no good match found
+        logger.warning(f"Fuzzy match error for industry '{industry}': {e}")
+
+    return default
 
 
-def fetch_finviz_data(url: str) -> Dict[str, Dict[str, Optional[float]]]:
-    headers = {"User-Agent": "Mozilla/5.0"}
-    resp = requests.get(url, headers=headers)
+# ---------------------------------------------------------------------------
+# Finviz valuation updater
+# ---------------------------------------------------------------------------
+
+_FINVIZ_HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+_SECTOR_MAP = {
+    "Materials": "Basic Materials",
+    "Consumer Discretionary": "Consumer Cyclical",
+    "Consumer Staples": "Consumer Defensive",
+    "Financials": "Financial",
+    "Health Care": "Healthcare",
+    "Information Technology": "Technology",
+    "Real Estate": "Real Estate",
+    "Utilities": "Utilities",
+    "Energy": "Energy",
+    "Industrials": "Industrials",
+    "Communication Services": "Communication Services",
+    "Consumer Services": "Consumer Cyclical",
+    "Technology Services": "Technology",
+    "Health Technology": "Healthcare",
+    "Communications": "Communication Services",
+    "Electronic Technology": "Technology",
+    "Retail Trade": "Consumer Cyclical",
+    "Consumer Durables": "Consumer Cyclical",
+    "Transportation": "Industrials",
+}
+
+_INDUSTRY_MAP = {
+    "Insurance - Life": "Life Insurance",
+    "Insurance - Property & Casualty": "Property & Casualty Insurance",
+    "Insurance - Specialty": "Specialty Insurance",
+    "Insurance - Diversified": "Diversified Insurance",
+    "REIT - Mortgage": "Mortgage REITs",
+    "REIT - Diversified": "Diversified REITs",
+    "REIT - Retail": "Retail REITs",
+    "REIT - Residential": "Residential REITs",
+    "REIT - Industrial": "Industrial REITs",
+    "REIT - Office": "Office REITs",
+    "REIT - Hotel & Motel": "Hotel & Motel REITs",
+    "REIT - Healthcare Facilities": "Health Care REITs",
+    "REIT - Specialty": "Specialty REITs",
+    "Oil & Gas E&P": "Oil & Gas Exploration & Production",
+    "Beverages - Brewers": "Brewers",
+    "Beverages - Wineries & Distilleries": "Distillers & Vintners",
+    "Beverages - Non-Alcoholic": "Non-Alcoholic Beverages",
+    "Telecom Services": "Telecommunication Services",
+    "Internet Content & Information": "Interactive Media & Services",
+    "Software - Application": "Application Software",
+    "Software - Infrastructure": "Systems Software",
+}
+
+
+def _fetch_finviz_table(url: str) -> dict[str, dict[str, Optional[float]]]:
+    resp = requests.get(url, headers=_FINVIZ_HEADERS, timeout=15)
     resp.raise_for_status()
-    
     soup = BeautifulSoup(resp.text, "html.parser")
-    table = soup.find('div',class_="content").find('table',class_="styled-table-new is-medium is-rounded is-tabular-nums w-full groups_table")
+    table = soup.find("div", class_="content").find(
+        "table",
+        class_="styled-table-new is-medium is-rounded is-tabular-nums w-full groups_table",
+    )
     if not table:
-        raise ValueError("Could not find data table in Finviz response")
-    
-    table_data = table.find_all("tr")[1:] 
+        raise ValueError(f"Could not find data table at {url}")
 
     result = {}
-    for data in table_data:
-        if data.find('a'):
-            pe = data.find_all("td")[3].get_text()
-            pb = data.find_all("td")[7].get_text()
-            result[data.find('a').get_text()] = {'PE': float(pe) if pe != '-' else None, 'PB' :float(pb) if pb != '-' else None}
-        
+    for row in table.find_all("tr")[1:]:
+        link = row.find("a")
+        if not link:
+            continue
+        cells = row.find_all("td")
+        pe_text = cells[3].get_text() if len(cells) > 3 else "-"
+        pb_text = cells[7].get_text() if len(cells) > 7 else "-"
+        result[link.get_text()] = {
+            "PE": float(pe_text) if pe_text != "-" else None,
+            "PB": float(pb_text) if pb_text != "-" else None,
+        }
     return result
 
 
 def update_industry_valuations(verbose: bool = True) -> None:
-    # URLs for Finviz group data
     SECTOR_URL = "https://finviz.com/groups.ashx?g=sector&v=120&o=pe"
     INDUSTRY_URL = "https://finviz.com/groups.ashx?g=industry&v=120&o=pe"
-    
-    # Mapping for sector names (YAML -> Finviz)
-    SECTOR_MAP = {
-        'Materials': 'Basic Materials',
-        'Consumer Discretionary': 'Consumer Cyclical',
-        'Consumer Staples': 'Consumer Defensive',
-        'Financials': 'Financial',
-        'Health Care': 'Healthcare',
-        'Information Technology': 'Technology',
-        'Real Estate': 'Real Estate',
-        'Utilities': 'Utilities',
-        'Energy': 'Energy',
-        'Industrials': 'Industrials',
-        'Communication Services': 'Communication Services',
-        # Add missing mappings from YAML file
-        'Consumer Services': 'Consumer Cyclical',
-        'Technology Services': 'Technology',
-        'Health Technology': 'Healthcare',
-        'Communications': 'Communication Services',
-        'Electronic Technology': 'Technology',
-        'Retail Trade': 'Consumer Cyclical',
-        'Consumer Durables': 'Consumer Cyclical',
-        'Transportation': 'Industrials'
-    }
-    
-    INDUSTRY_MAP = {
-        "Insurance - Life": "Life Insurance",
-        "Insurance - Property & Casualty": "Property & Casualty Insurance",
-        "Insurance - Specialty": "Specialty Insurance",
-        "Insurance - Diversified": "Diversified Insurance",
-        "REIT - Mortgage": "Mortgage REITs",
-        "REIT - Diversified": "Diversified REITs",
-        "REIT - Retail": "Retail REITs",
-        "REIT - Residential": "Residential REITs",
-        "REIT - Industrial": "Industrial REITs",
-        "REIT - Office": "Office REITs",
-        "REIT - Hotel & Motel": "Hotel & Motel REITs",
-        "REIT - Healthcare Facilities": "Health Care REITs",
-        "REIT - Specialty": "Specialty REITs",
-        "Oil & Gas E&P": "Oil & Gas Exploration & Production",
-        "Beverages - Brewers": "Brewers",
-        "Beverages - Wineries & Distilleries": "Distillers & Vintners",
-        "Beverages - Non-Alcoholic": "Non-Alcoholic Beverages",
-        "Telecom Services": "Telecommunication Services",
-        "Internet Content & Information": "Interactive Media & Services",
-        "Software - Application": "Application Software",
-        "Software - Infrastructure": "Systems Software"
-    }
-    
+
     try:
-        # Fetch sector and industry data
-        sector_data = fetch_finviz_data(SECTOR_URL)
-        industry_data = fetch_finviz_data(INDUSTRY_URL)
-        
-        # Load existing config
-        config = load_cfg(investments_file)
-        
-        # Track changes for logging
-        changes = []
-        
-        # Debug: Print available sectors from both sources
-        if verbose:
-            print("\n=== Available Sectors ===")
-            print("From Finviz:", ", ".join(sorted(sector_data.keys())))
-            print("From YAML:", ", ".join(k for k in config.keys() if k != 'config'))
-            print("\n=== Sector Mappings ===")
-            for yaml_name, finviz_name in SECTOR_MAP.items():
-                print(f"YAML: {yaml_name:25} -> Finviz: {finviz_name}")
-        
-        # Track which sectors we've found matches for
-        matched_sectors = set()
-        
-        # Update sector-level data
-        for sector_yaml, industries in config.items():
-            if sector_yaml == 'config':
-                continue
-                
-            # Map YAML sector name to Finviz sector name
-            finviz_sector = SECTOR_MAP.get(sector_yaml)
-            
-            if verbose:
-                print(f"\nProcessing YAML sector: {sector_yaml} (maps to Finviz: {finviz_sector})")
-            
-            if finviz_sector and finviz_sector in sector_data:
-                matched_sectors.add(finviz_sector)
-                new_pe = sector_data[finviz_sector]["PE"]
-                new_pb = sector_data[finviz_sector]["PB"]
-                
-                if verbose:
-                    print(f"  Found matching Finviz sector: {finviz_sector}")
-                    print(f"  PE: {new_pe}, PB: {new_pb}")
-                
-                # Update default ratio if it exists
-                if 'default' in industries and isinstance(industries['default'], list):
-                    old_pe, old_pb = industries['default']
-                    
-                    # Only update if values have changed
-                    pe_changed = new_pe is not None and new_pe != old_pe
-                    pb_changed = new_pb is not None and new_pb != old_pb
-                    
-                    if pe_changed or pb_changed:
-                        old_values = f"PE: {old_pe:.2f}, PB: {old_pb:.2f}"
-                        new_pe_val = new_pe if pe_changed else old_pe
-                        new_pb_val = new_pb if pb_changed else old_pb
-                        industries['default'] = [new_pe_val, new_pb_val]
-                        
-                        change_info = {
-                            'type': 'sector',
-                            'name': sector_yaml,
-                            'finviz_name': finviz_sector,
-                            'old_values': old_values,
-                            'new_values': f"PE: {new_pe_val:.2f}, PB: {new_pb_val:.2f}",
-                            'source': 'Finviz',
-                            'timestamp': str(datetime.datetime.now())
-                        }
-                        changes.append(change_info)
-                        
-                        if verbose:
-                            print(f"  Updated {sector_yaml} default ratios")
-                            print(f"    Old: {old_values}")
-                            print(f"    New: PE: {new_pe_val:.2f}, PB: {new_pb_val:.2f}")
-                    else:
-                        if verbose:
-                            print(f"  No changes for {sector_yaml} default ratios")
-                elif verbose:
-                    print(f"  No default ratios found for {sector_yaml}")
-            
-            # Update industry data
-            for industry_yaml, metrics in industries.items():
-                if industry_yaml == 'default' or not isinstance(metrics, list) or len(metrics) < 2:
-                    continue
-                    
-                # Map industry name if needed
-                src_industry = INDUSTRY_MAP.get(industry_yaml, industry_yaml)
-                
-                if src_industry in industry_data:
-                    new_pe = industry_data[src_industry]["PE"]
-                    new_pb = industry_data[src_industry]["PB"]
-                    
-                    # Only update if values have changed
-                    pe_changed = new_pe is not None and new_pe != metrics[0]
-                    pb_changed = new_pb is not None and new_pb != metrics[1]
-                    
-                    if pe_changed or pb_changed:
-                        old_values = f"PE: {metrics[0]:.2f}, PB: {metrics[1]:.2f}"
-                        
-                        if pe_changed:
-                            metrics[0] = new_pe
-                        if pb_changed:
-                            metrics[1] = new_pb
-                            
-                        change_info = {
-                            'type': 'industry',
-                            'sector': sector_yaml,
-                            'name': industry_yaml,
-                            'old_values': old_values,
-                            'new_values': f"PE: {metrics[0]:.2f}, PB: {metrics[1]:.2f}",
-                            'source': 'Finviz',
-                            'timestamp': str(datetime.datetime.now())
-                        }
-                        changes.append(change_info)
-        
-        # Print summary of matched sectors
-        if verbose:
-            print("\n=== Sector Matching Summary ===")
-            print(f"Matched {len(matched_sectors)}/{len(sector_data)} Finviz sectors")
-            unmatched = set(sector_data.keys()) - matched_sectors
-            if unmatched:
-                print("Unmatched Finviz sectors:", ", ".join(sorted(unmatched)))
-        
-        # Save the updated config
-        if changes:
-            with open(investments_file, 'w') as f:
-                yaml.dump(config, f, default_flow_style=False, sort_keys=False)
-            
-            if verbose:
-                print("\n=== Industry Valuation Updates ===")
-                print(f"Updated {len(changes)} valuations")
-                for change in changes:
-                    if change['type'] == 'sector':
-                        print(f"\nSector: {change['name']}")
-                        if 'finviz_name' in change:
-                            print(f"  Finviz: {change['finviz_name']}")
-                    else:
-                        print(f"\nSector: {change['sector']} | Industry: {change['name']}")
-                    print(f"  Old: {change['old_values']}")
-                    print(f"  New: {change['new_values']}")
-                    print(f"  Source: {change['source']} at {change['timestamp']}")
-                print("\n=== Update Complete ===")
-            
-            logging.info(f"Updated {len(changes)} industry valuations in investments.yaml")
-        else:
-            if verbose:
-                print("\nNo changes detected in industry valuations.")
-                print("This could be because:")
-                print("1. The ratios in the YAML file already match Finviz")
-                print("2. The sector/industry names don't match between sources")
-                print("3. There was an error in the mapping")
-            logging.info("No changes detected in industry valuations")
-        
+        sector_data = _fetch_finviz_table(SECTOR_URL)
+        industry_data = _fetch_finviz_table(INDUSTRY_URL)
     except Exception as e:
-        logging.error(f"Failed to update industry valuations: {str(e)}")
-        if verbose:
-            print(f"Error updating industry valuations: {str(e)}")
+        logger.error(f"Failed to fetch Finviz data: {e}")
         raise
 
+    cfg = _load_cfg()
+    changes: list[dict] = []
 
-def store_data_as_csv(
-    dataset:str, 
-    schema: list[str],
-    data: list[list] | pd.DataFrame, 
-    add_timestamp:bool=True
-    ) -> None:
-    filename = os.path.join(
-    DATA_DIRECTORY,
-    f"{dataset}_{str(datetime.datetime.now().strftime('%Y-%m-%d')).replace('-', '_')}.csv" if add_timestamp else f"{dataset}.csv"
-    )
-    if isinstance(data, pd.DataFrame):
-        data.to_csv(filename,index=False)
-        print(f"Stored {dataset} @ {filename}")
-        return 
+    for sector_yaml, industries in cfg.items():
+        if sector_yaml == "config" or not isinstance(industries, dict):
+            continue
 
-    r_data = random.choice(data)
-    assert len(schema) == len(r_data), f"Schema {schema} does not match input {data[0]}"
-    assert all(len(i) == len(r_data) for i in data), f"Got Mismatched Data Length"
+        finviz_sector = _SECTOR_MAP.get(sector_yaml)
+        if finviz_sector and finviz_sector in sector_data:
+            new_pe = sector_data[finviz_sector]["PE"]
+            new_pb = sector_data[finviz_sector]["PB"]
+            default = industries.get("default")
+            if isinstance(default, list) and len(default) >= 2:
+                old_pe, old_pb = default[0], default[1]
+                updated_pe = new_pe if new_pe is not None else old_pe
+                updated_pb = new_pb if new_pb is not None else old_pb
+                if updated_pe != old_pe or updated_pb != old_pb:
+                    industries["default"] = [updated_pe, updated_pb]
+                    changes.append({
+                        "type": "sector", "name": sector_yaml,
+                        "old": f"PE={old_pe}, PB={old_pb}",
+                        "new": f"PE={updated_pe}, PB={updated_pb}",
+                    })
 
-    with open(filename, "w+", newline="") as file:
-        csvwriter = csv.writer(file)
-        csvwriter.writerow(schema)
-        for row in data:
-                csvwriter.writerow(row)
-    print(f"Stored {dataset} @ {filename}")
+        for ind_yaml, metrics in industries.items():
+            if ind_yaml == "default" or not isinstance(metrics, list) or len(metrics) < 2:
+                continue
+            finviz_ind = _INDUSTRY_MAP.get(ind_yaml, ind_yaml)
+            if finviz_ind not in industry_data:
+                continue
+            new_pe = industry_data[finviz_ind]["PE"]
+            new_pb = industry_data[finviz_ind]["PB"]
+            old_pe, old_pb = metrics[0], metrics[1]
+            changed = False
+            if new_pe is not None and new_pe != old_pe:
+                metrics[0] = new_pe
+                changed = True
+            if new_pb is not None and new_pb != old_pb:
+                metrics[1] = new_pb
+                changed = True
+            if changed:
+                changes.append({
+                    "type": "industry", "sector": sector_yaml, "name": ind_yaml,
+                    "old": f"PE={old_pe}, PB={old_pb}",
+                    "new": f"PE={metrics[0]}, PB={metrics[1]}",
+                })
 
-
-def read_data_as_pd(dataset:str) -> pd.DataFrame:
-    files = os.listdir(DATA_DIRECTORY)
-    matched_files = [i for i in files if dataset in i]
-    
-    if not matched_files:
-        print(f'File Not found {dataset} in {DATA_DIRECTORY}')
-        return 
-    print(f"Using {matched_files[0]} as {dataset} data")
-    return pd.read_csv(os.path.join(DATA_DIRECTORY,matched_files[0]))
-    
+    if changes:
+        with open(INVESTMENTS_FILE, "w") as f:
+            yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
+        if verbose:
+            logger.info(f"Updated {len(changes)} valuations in investments.yaml")
+            for c in changes:
+                loc = c["name"] if c["type"] == "sector" else f"{c['sector']} / {c['name']}"
+                logger.info(f"  {c['type'].upper()} {loc}: {c['old']} → {c['new']}")
+    else:
+        if verbose:
+            logger.info("No valuation changes detected")

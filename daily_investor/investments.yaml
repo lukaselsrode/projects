@@ -1,8 +1,8 @@
 config:
   ignore_negative_pe: false
   ignore_negative_pb: false
-  dividend_threshold: 3
-  metric_threshold: 4
+  dividend_threshold: 0.03
+  metric_threshold: 0.8
   selloff_threshold: 30
   weekly_investment: 400
   index_pct: 0.01
@@ -19,23 +19,23 @@ config:
   - SMH
 Consumer Services:
   default:
-  - 31.35
-  - 4.7
+  - 30.42
+  - 4.69
   Other Consumer Services:
   - 20
   - 5.5
   Broadcasting:
-  - 53.01
-  - 2.05
+  - 45.79
+  - 2.12
   Casinos:
   - 18
   - 11
   Entertainment:
-  - 30.24
-  - 3.75
+  - 30.52
+  - 3.79
   Restaurants:
-  - 30.61
-  - 22.12
+  - 30.32
+  - 22.38
   Resorts:
   - 15
   - 11
@@ -44,21 +44,21 @@ Consumer Services:
   - null
 Technology Services:
   default:
-  - 36.88
-  - 10.3
+  - 37.98
+  - 10.26
   Software:
   - 37
   - 9
   Information Technology Services:
-  - 17.45
-  - 3.27
+  - 17.56
+  - 3.29
 Retail Trade:
   default:
-  - 31.35
-  - 4.7
+  - 30.42
+  - 4.69
   Discount Stores:
-  - 42.24
-  - 9.61
+  - 43.18
+  - 9.82
   Specialty Stores:
   - null
   - 7.4
@@ -76,31 +76,31 @@ Retail Trade:
   - 2.92
 Health Technology:
   default:
-  - 27.9
-  - 4.28
+  - 28.7
+  - 4.36
   Pharmaceuticals:
   - 80
   - 5.2
   Biotechnology:
-  - 55.59
-  - 4.7
+  - 55.67
+  - 4.73
   Medical:
   - 35
   - 5.12
 Communications:
   default:
-  - 39.76
-  - 7.93
+  - 38.8
+  - 8.14
   Wireless Telecommunications:
   - 36
   - 5
 Electronic Technology:
   default:
-  - 36.88
-  - 10.3
+  - 37.98
+  - 10.26
   Semiconductors:
-  - 47.16
-  - 14.07
+  - 46.27
+  - 14.0
   Telecommunications Equipment:
   - 48
   - 5.14
@@ -121,12 +121,12 @@ Electronic Technology:
   - 5.08
 Consumer Durables:
   default:
-  - 31.35
-  - 4.7
+  - 30.42
+  - 4.69
   Motor Vehicles:
   - 12.3
   - 4.6
 Transportation:
   default:
-  - 31.87
-  - 5.63
+  - 32.28
+  - 5.66
