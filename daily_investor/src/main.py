@@ -363,6 +363,17 @@ def make_buys(df: pd.DataFrame, is_first_iteration: bool = True) -> tuple[list, 
 
     # Pre-filter by value_metric
     total_before = len(df)
+    df["value_metric"] = pd.to_numeric(df["value_metric"], errors="coerce").fillna(0.0)
+
+    logger.info(f"value_metric dtype: {df['value_metric'].dtype}")
+    logger.info(f"value_metric max: {df['value_metric'].max()}")
+    logger.info(
+        "Top value_metric rows:\n%s",
+        df[["symbol", "value_metric"]]
+        .sort_values("value_metric", ascending=False)
+        .head(10)
+        .to_string(index=False)
+    )
     candidates = df[df["value_metric"] >= METRIC_THRESHOLD].copy()
     logger.info(f"Pre-filter: {total_before} → {len(candidates)} stocks (value_metric ≥ {METRIC_THRESHOLD})")
 

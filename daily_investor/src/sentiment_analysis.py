@@ -24,6 +24,9 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, StateGraph
 from typing_extensions import TypedDict
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from util import CONFIDENCE_THRESHOLD, METRIC_KEYS, read_data_as_pd
 

@@ -322,15 +322,16 @@ def get_data(refresh: bool = False) -> pd.DataFrame:
         print("Warning: No fundamental data available")
         return pd.DataFrame()
 
-    result = metrics if news_df is None or news_df.empty else metrics.merge(news_df, on="symbol", how="left")
+    if news_df is not None and not news_df.empty:
+        result = metrics.merge(news_df, on="symbol", how="left")
+    else:
+        result = metrics.copy()
 
-    if refresh and not result.empty:
+    if not result.empty:
         store_data_as_csv("agg_data", "", result)
         time.sleep(1)
 
-    agg = read_data_as_pd("agg_data")
-    return agg if agg is not None else result
-
+    return result
 
 if __name__ == "__main__":
     df = get_data(refresh=False)
