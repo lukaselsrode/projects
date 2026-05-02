@@ -6,3 +6,5 @@ __*
 env*
 dist*
 build*
+*.so
+*.cpython-*.so
